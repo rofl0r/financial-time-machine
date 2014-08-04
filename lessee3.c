@@ -1,6 +1,6 @@
 #include "amiga.h"
 #include "extern.h"
-
+#include <stdlib.h>
 getsave()
   {
     FILE *saved;
@@ -16,7 +16,7 @@ getsave()
         cursor(24,0);
         sprintf(tempstr,"NO SAVED GAME FOUND");
         TxWrite(rp,tempstr);
-        exit();
+        exit(1);
       }
     else
       {
@@ -522,34 +522,14 @@ float stdev;
   {
 
     float holder;
-    float rand();
+    float frand();
     double cos(),sqrt(),log();
 
 
-    holder = (sqrt(-2.0 * log(rand())) * (cos (pi2 * rand()))) * stdev;
+    holder = (sqrt(-2.0 * log(frand())) * (cos (pi2 * frand()))) * stdev;
     return(holder);
   }
 
-
-
-getmicros()
-  {ULONG Seconds, Micros;
-   CurrentTime(&Seconds,&Micros);
-   return((int) (Micros % 100) + 1);
-  }
-
-
-gethundredths()
-  {
-  ULONG Seconds, Micros;
-  CurrentTime(&Seconds,&Micros);
-  return((int)Micros/10000);
-  }
-
-float rand()
-  {
-    return ( (float) getmicros() / 101.0);
-  }
 
 stall(x)
 int x;

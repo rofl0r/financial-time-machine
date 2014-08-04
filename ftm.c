@@ -1,4 +1,7 @@
 #include "amiga.h"
+#include "extern.h"
+#include <stdlib.h>
+#include <ctype.h>
 
 #define cursor cursorit
 #define vmode vmodeitt
@@ -75,20 +78,6 @@ int i;
 #define F10 -80
           /** for JUMPing.  Added 11/22/85 **/
 
-typedef struct stock {
-                        char name[4];
-                        float b1;
-                        float b2;
-                        float b3;
-                        float  e;
-                        int price;
-                     }ASTOCK;
-
-typedef struct {
-                  int price[20];
-                  char splits[20];
-               } HISTORY;
-
 HISTORY history[NO_OF_STOCKS];
 
 
@@ -98,56 +87,15 @@ ASTOCK stock_array[NO_OF_STOCKS];
 char alpha[] =
   { 16, 12, 2, 28, 14, 15, 11, 1, 26, 5, 22, 29, 8, 0, 13, 18, 9, 20, 4, 24, 10, 17, 25, 23, 6, 19, 21, 7, 27, 3, 30 };
 
-typedef struct
-    {
-      int stock_no;
-      int units;
-      int price;
-      float  margin_debt;
-    } SCREEN;
-
 SCREEN screen[STOCKLIMIT];
 
 SCREEN *scr_ptr[STOCKLIMIT];
 
 int screen_count = 0;
 
-
-
-typedef struct
-  {
-    char string[82];
-    float intr;
-    float gnp;
-    float pol;
-    float var;
-    char used;
-
-  } YMESS;
-
-typedef struct
-  {
-    YMESS item[NO_YRLY_MESSAGES];
-  } YMESSS;
-
 YMESSS yrly_mssgs;
 
 int y_mssg_count;
-
-typedef struct
-  {
-    char string[82];
-    float intr;
-    float gnp;
-    float pol;
-    float var;
-
-  } SMESS;
-
-typedef struct
-  {
-    SMESS item[NO_STD_MESSAGES];
-  } SMESSS;
 
 SMESSS std_mssgs;
 
@@ -173,13 +121,6 @@ char commands[NO_OF_COMMANDS] [9] =
   };
 
 
-typedef struct tick_item
-    {
-      char item[11];
-      struct tick_item *next;
-      struct tick_item *previous;
-    } TICK_ITEM;
-
 TICK_ITEM *cur_tick;
 TICK_ITEM ticker[TICK_SIZE];
 
@@ -191,67 +132,9 @@ char newsline[82];         /* holds current news message */
 
 int cur_news_line = -1;   /* the number of the last position in the newline
                            array to be put on screen */
-typedef struct autos
-    {
-      int minus_price;     /* price to exercise auto buy */
-      int plus_price;    /* price to exercise auto sell */
-      int option_type;   /* CALL or PUT option?  */
-      int option_price;  /* price option is exerciseable at */
-      int  units;         /* number of shares */
-      int stock_no;      /* stock id number */
-      int cur_price;     /* the last price posted */
-      int  pur_price;     /* how much the option cost per lot */
-    } AUTOS;
-
-
-typedef struct node
-    {
-      int year;
-      int week;
-      int shares;
-      struct node *next;
-      struct node *previous;
-      int price;
-    } NODE;
-
-typedef struct
-    {
-      int shares;
-      int limit;
-      float  margin_debt;
-      NODE *purchases;
-    } STOCKS;
-
-
-
-typedef struct player
-    {
-      double cash;
-      double net_worth;
-      STOCKS portfolio[NO_OF_STOCKS];
-      int stock_count;
-      int auto_count;
-      AUTOS *auto_ptr[AUTOLIMIT];       /* pointers to the auto exec structures */
-      AUTOS auto_array[AUTOLIMIT];      /* the actual auto exec structures */
-      char name[21];
-      int name_length;          /* characters in the person's name */
-      double taxes;
-      float short_term;
-      float long_term;
-      float other_earnings;
-      int bonds;
-
-    } PLAYER;
 
 PLAYER players[MAXPLAYERS];
 PLAYER *cur_player;
-
-typedef struct
-    {
-      int status;               /* 1 if ON 2 if OFF */
-      int count;                /* seconds since hour when initialized */
-      int hour_changed;         /* flag set if timer approaching hour change */
-    } TIMER;
 
 TIMER timer1;                   /* for game time timing */
 TIMER timer2;                   /* for changing player timing */
@@ -379,13 +262,15 @@ struct NewWindow NW =
 
 struct Window *W;
 extern struct MsgPort *CreatePort();
-UBYTE allocationMap[] = {1, 2, 4, 8};
-BYTE si[] = {0,49,90,117,127,117,90,49,0,-49,-90,-117,-127,-117,-90,-49};
+unsigned char allocationMap[] = {1, 2, 4, 8};
+signed char si[] = {0,49,90,117,127,117,90,49,0,-49,-90,-117,-127,-117,-90,-49};
 struct IOAudio *ioa;
 struct RastPort *rp;
 struct ViewPort *vp;
 char tempstr[250];
 extern char headers1();
+
+float frand();
 
 main()
   {
@@ -398,8 +283,6 @@ main()
     int kbhit();
     float myrandom();
     double pow(), exp(), log(), round();
-    float  rand();
-    char toupper();
 
   for (i=0; i<31; i++)
     stock_array[i].price = 100;
@@ -1104,7 +987,7 @@ continue1:        if (timer1.status == ON)
             (!stop) && (!in_progress) &&
             ((newsline[cur_news_line] == '\n') || (cur_news_line == -1)))
           {
-            timer3.count = time + 8 + ((int) round((double) rand() * 3.0));
+            timer3.count = time + 8 + ((int) round((double) frand() * 3.0));
             if (timer3.count >= 3599)
               {
                 timer3.count -= 3599;
@@ -1122,7 +1005,7 @@ continue1:        if (timer1.status == ON)
 
             cur_news_line = 0;
             half_way = -2;
-            j = rand();
+            j = frand();
             k = ((float) y_mssg_count - 0.00001 );
             l = j * k;
             messno = (int) l;
@@ -1146,7 +1029,7 @@ fclose(fp);
               {
 
 
-                messno = (int)(rand() * 29.9999);
+                messno = (int)(frand() * 29.9999);
 
 
                 for (g = 0; g < 82; ++g)

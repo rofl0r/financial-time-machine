@@ -1,5 +1,6 @@
 #include "amiga.h"
 #include "extern.h"
+#include <stdlib.h>
 
 end_year()
   {

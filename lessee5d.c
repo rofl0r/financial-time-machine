@@ -102,5 +102,5 @@ continue3:            if ((cur_player->portfolio[stockno].shares == 0) && (!stop
 
           }   /* end: update a current holding */
 
-continue4:      }  /* end: if rankings aren't up */
+continue4:;      }  /* end: if rankings aren't up */
   }

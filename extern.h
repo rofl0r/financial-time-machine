@@ -1,3 +1,8 @@
+#ifndef EXTERN_H
+#define EXTERN_H
+
+#include <stdio.h>
+
 #define cursor cursorit
 #define vmode vmodeitt
 #define getkb getkbitt
@@ -237,6 +242,9 @@ extern TIMER timer1;                   /* for game time timing */
 extern TIMER timer2;                   /* for changing player timing */
 extern TIMER timer3;                   /* for event gap timing */
 
+struct RastBord {
+};
+
 
 extern char message;                    /* true if program message displayed */
 
@@ -318,10 +326,11 @@ extern struct NewWindow NW;
 
 extern struct Window *W;
 extern struct MsgPort *CreatePort();
-extern UBYTE allocationMap[];
-extern BYTE si[];
+extern unsigned char allocationMap[];
+extern signed char si[16];
 extern struct IOAudio *ioa;
 extern struct RastPort *rp;
 extern struct ViewPort *vp;
 extern char tempstr[250];
 
+#endif
