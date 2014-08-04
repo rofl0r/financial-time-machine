@@ -263,7 +263,7 @@ struct Window *W;
 extern struct MsgPort *CreatePort();
 unsigned char allocationMap[] = {1, 2, 4, 8};
 signed char si[] = {0,49,90,117,127,117,90,49,0,-49,-90,-117,-127,-117,-90,-49};
-struct IOAudio *ioa;
+//struct IOAudio *ioa;
 struct RastPort *rp;
 //struct ViewPort *vp;
 char tempstr[250];
@@ -539,6 +539,7 @@ main()
     SetRGB4(vp,5,0,0,15);
 #endif
 
+#if 0
     ioa = (struct IOAudio *) AllocMem(sizeof(*ioa),
           MEMF_PUBLIC | MEMF_CLEAR);
     if (ioa == NULL) exit(FALSE);
@@ -568,7 +569,7 @@ main()
     cur_player = &players[0];           /* set current player as player 1 */
     click_on = TRUE;
     tick_position = 0;
-
+#endif
 
 
 /* puts us in 40x25 color text mode */

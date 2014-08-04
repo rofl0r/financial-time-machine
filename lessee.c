@@ -116,10 +116,10 @@ shutdown()
   TxWrite(rp,tempstr);
   while (kbhit() == NULL)
     ;
-  FreeMem(ioa->ioa_Data,sizeof(si));
-  CloseDevice(ioa);
-  DeletePort(ioa->ioa_Request.io_Message.mn_ReplyPort);
-  FreeMem(ioa,sizeof(*ioa));
+//  FreeMem(ioa->ioa_Data,sizeof(si));
+//  CloseDevice(ioa);
+//  DeletePort(ioa->ioa_Request.io_Message.mn_ReplyPort);
+//  FreeMem(ioa,sizeof(*ioa));
 //  CloseWindow(W);
 //  CloseScreen(S);
   exit(TRUE);

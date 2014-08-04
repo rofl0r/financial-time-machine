@@ -1,23 +1,23 @@
 #include <stdio.h>
 #define STUB(X) long X () { dprintf(2, "warning: %s unimplemented\n", __FUNCTION__); return 0;}
 /* clib/exec_protos.h */
-STUB(OpenDevice)
+//STUB(OpenDevice)
 // BYTE OpenDevice( UBYTE *devName, unsigned long unit,
 //        struct IORequest *ioRequest, unsigned long flags );
-STUB(CloseDevice)
+//STUB(CloseDevice)
 // void CloseDevice( struct IORequest *ioRequest );
 
 /* clib/alib_protos.h */
-STUB(CreatePort)
+//STUB(CreatePort)
 // struct MsgPort *CreatePort( STRPTR name, long pri );
-STUB(DeletePort)
+//STUB(DeletePort)
 // void DeletePort( struct MsgPort *ioReq );
 
 
 /* clib/exec_protos.h */
-STUB(AllocMem)
+//STUB(AllocMem)
 //APTR AllocMem( unsigned long byteSize, unsigned long requirements );
-STUB(FreeMem)
+//STUB(FreeMem)
 //void FreeMem( APTR memoryBlock, unsigned long byteSize );
 
 /* clib/dos_protos.h */
