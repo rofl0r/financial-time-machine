@@ -6,6 +6,12 @@
 #include <unistd.h>
 #include "amiga.h"
 
+#ifdef DEBUG
+#define DPRINTF(...) dprintf(2, __VA_ARGS__)
+#else
+#define DPRINTF(...) do { } while(0)
+#endif
+
 #define cursor cursorit
 #define vmode vmodeitt
 #define getkb getkbitt
@@ -488,12 +494,9 @@ static float normal(float value) {
 	if(flag)
 		holder = 1.0 - holder;
 
-/*
-fp = fopen("prn","w");
-fprintf(fp,"value is %f i is %d\n",value,i);
-fprintf(fp,"normal returns %f\n",holder);
-fclose(fp);
-*/
+	DPRINTF("value is %f i is %d\n",value,i);
+	DPRINTF("normal returns %f\n",holder);
+
 	return (holder);
 }
 
@@ -503,26 +506,16 @@ float variance(int stockno) {
 	tvx2 = vx2 + factor2;
 	tvx3 = vx3 + factor3;
 	tvx4 = vx4 + factor4;
-
-
-/*
-fp = fopen("prn","w");
-fprintf(fp,"ran %f q_int %f\n",myrandom(2.0 * q_int_rate),q_int_rate);
-fprintf(fp,"4 tvx1 %f tvx2 %f tvx3 %f tvx4 %f\n",tvx1,tvx2,tvx3,tvx4);
-fclose(fp);
-
-fp = fopen("prn","w");
-fprintf(fp,"st %d b1 %f sqr %f sq* %f\n",stockno,stock_array[stockno].b1,sqr(stock_array[stockno].b1),
-         (sqr(stock_array[stockno].b1) * tvx1));
-fprintf(fp,"st %d b2 %f sqr %f sq* %f\n",stockno,stock_array[stockno].b2,sqr(stock_array[stockno].b2),
-         (sqr(stock_array[stockno].b2) * tvx2));
-fprintf(fp,"st %d b3 %f sqr %f sq* %f\n",stockno,stock_array[stockno].b3,sqr(stock_array[stockno].b3),
-         (sqr(stock_array[stockno].b3) * tvx3));
-fprintf(fp,"st %d e %f sqr %f sq* %f\n",stockno,stock_array[stockno].e,sqr(stock_array[stockno].e),
-         (sqr(stock_array[stockno].e) * tvx4));
-fclose(fp);
-
-*/
+	DPRINTF("ran %f q_int %f\n",myrandom(2.0 * q_int_rate),q_int_rate);
+	DPRINTF("4 tvx1 %f tvx2 %f tvx3 %f tvx4 %f\n",tvx1,tvx2,tvx3,tvx4);
+	DPRINTF("st %d b1 %f sqr %f sq* %f\n",stockno,stock_array[stockno].b1,sqr(stock_array[stockno].b1),
+	         (sqr(stock_array[stockno].b1) * tvx1));
+	DPRINTF("st %d b2 %f sqr %f sq* %f\n",stockno,stock_array[stockno].b2,sqr(stock_array[stockno].b2),
+	         (sqr(stock_array[stockno].b2) * tvx2));
+	DPRINTF("st %d b3 %f sqr %f sq* %f\n",stockno,stock_array[stockno].b3,sqr(stock_array[stockno].b3),
+        	 (sqr(stock_array[stockno].b3) * tvx3));
+	DPRINTF("st %d e %f sqr %f sq* %f\n",stockno,stock_array[stockno].e,sqr(stock_array[stockno].e),
+        	 (sqr(stock_array[stockno].e) * tvx4));
 
 	return (((sqr(stock_array[stockno].b1) * tvx1) +
 		 (sqr(stock_array[stockno].b2) * tvx2) +
@@ -576,7 +569,6 @@ static void end_year(void) {
 				del_auto(counter, player + 1);
 				--counter;
 			}
-
 		}		/* end for counter */
 
 
@@ -597,8 +589,6 @@ static void end_year(void) {
 			play_ptr->cash = 0;
 		}
 		play_ptr->short_term = play_ptr->long_term = play_ptr->other_earnings = 0;
-
-
 	}			/* end for players */
 
 	++year;
@@ -613,7 +603,6 @@ static void end_year(void) {
 static void execute(int com_no, int units, int stock_no, int price, int auto_minus, int auto_plus, int player) {
 	AUTOS *ptr;
 	int counter;
-
 
 	switch (com_no) {
 		case BUY:
@@ -1119,17 +1108,13 @@ static void margin() {
 	float dif, y;
 	PLAYER *ptr;
 
-
-
 	make_call = FALSE;
 	owes[0] = 0;
 	found = FALSE;
 	passby = FALSE;
 
-
 	for(player = 0; player < no_of_players; ++player) {
 		ptr = &players[0] + player;
-
 
 		for(counter = 0; counter < NO_OF_STOCKS; ++counter) {
 			if((round((double) ptr->portfolio[counter].margin_debt) >
@@ -1158,7 +1143,6 @@ static void margin() {
 					upd_stock(counter);
 					upd_coh();
 				}
-
 			}
 		}
 
@@ -1176,14 +1160,11 @@ static void margin() {
 				ptr->taxes = 0;
 			}
 
-
 		if(cur_player == ptr) {
 			calc_netw(player + 1);
 			upd_netw();
 			upd_coh();
 		}
-
-
 	}
 
 	if(found || passby) {
@@ -1193,9 +1174,7 @@ static void margin() {
 			sprintf(tempstr, "MARGIN CALL ISSUED");
 			TxWrite(rp, tempstr);
 		} else if(stop) {
-			int x;
-
-			x = 0;
+			int x = 0;
 			if(found == OPTIONS) {
 				clear_bottom();
 				scr_status = RANKINGSUP;
@@ -1248,16 +1227,9 @@ static void margin() {
 					sprintf(tempstr, "%s IS BANKRUPT", ptr->name);
 					TxWrite(rp, tempstr);
 				}
-
-
-
 			}	/* end going through players */
-
 		}
-
 	}
-
-
 
 	if(stop == FALSE) {
 		q_break = FALSE;
@@ -1576,14 +1548,8 @@ static void getyear(int year) {
 		yrly_mssgs.item[i].var = get_float(in);
 
 		yrly_mssgs.item[i].used = FALSE;
-
-/*
-fp = fopen("prn","w");
-fprintf(fp,"i is %d\n",i);
-fprintf(fp,"message %s \n",yrly_mssgs.item[i].string);
-fclose(fp);
-*/
-
+		DPRINTF("i is %d\n",i);
+		DPRINTF("message %s \n",yrly_mssgs.item[i].string);
 	}
 
 	if(quarter == 1) {
@@ -1611,14 +1577,8 @@ fclose(fp);
 		vx4 /= (NO_STD_MESSAGES + x);
 	}
 
-
 	fclose(in);
-
-/*
-fp = fopen("prn","w");
-fprintf(fp,"final messcount is %d\n",y_mssg_count);
-fclose(fp);
-*/
+	DPRINTF("final messcount is %d\n",y_mssg_count);
 }
 
 
@@ -1770,8 +1730,6 @@ static void stall(int x) {
 			if(staller > 90)
 				staller = 0;
 		}
-
-
 }
 
 static void save() {
@@ -1867,55 +1825,21 @@ static float option(int com_no, int stockno, int ex_price) {
 
 	vari = variance(stockno);
 
-/*
-fp = fopen("prn","w");
-fprintf(fp,"stockno %d com_no %d\n",stockno,com_no);
-fclose(fp);
-*/
-
-/*
-fp = fopen("prn","w");
-fprintf(fp,"variance is %f\n",vari);
-fclose(fp);
-*/
+	DPRINTF("stockno %d com_no %d\n",stockno,com_no);
+	DPRINTF("variance is %f\n",vari);
 
 	t = (53.0 - ((float) week)) / 13.0;
-
-
-/*
-fp = fopen("prn","w");
-fprintf(fp,"\n t is %d\nlog is %f\n",t,log10(1.0));
-fclose(fp);
-*/
+	DPRINTF("\n t is %d\nlog is %f\n",t,log10(1.0));
 
 	factor1 = log10((float) stock_array[stockno].price / (float) ex_price);
 	factor2 = (sqrt(vari) * sqrt((double) t));
-
-/*
-fp = fopen("prn","w");
-fprintf(fp,"factor 1 %f factor 2 %f\n",factor1,factor2);
-fclose(fp);
-*/
-
-/*
-fp = fopen("prn","w");
-fprintf(fp,"sqrt vari %f sqrt t %f\n",sqrt(vari),sqrt((double) t));
-fclose(fp);
-*/
+	DPRINTF("factor 1 %f factor 2 %f\n",factor1,factor2);
+	DPRINTF("sqrt vari %f sqrt t %f\n",sqrt(vari),sqrt((double) t));
 
 	d1 = (factor1 + ((q_int_rate + (vari / 2.0)) * t)) / factor2;
 	d2 = (factor1 + ((q_int_rate - (vari / 2.0)) * t)) / factor2;
-
-/*
-fp = fopen("prn","w");
-fprintf(fp,"d1 is %f d2 is %f\n",d1,d2);
-fclose(fp);
-
-
-fp = fopen("prn","w");
-fprintf(fp,"vari / 2 * t %f\n",(vari/2.0) * t);
-fclose(fp);
-*/
+	DPRINTF("d1 is %f d2 is %f\n",d1,d2);
+	DPRINTF("vari / 2 * t %f\n",(vari/2.0) * t);
 
 	if(com_no == CALL)
 		holder =
@@ -1926,18 +1850,8 @@ fclose(fp);
 		    100.0 * (((ex_price / exp((double) q_int_rate * t)) * normal(-d2)) -
 			     (stock_array[stockno].price * normal(-d1)));
 
-
-/*
-fp = fopen("prn","w");
-fprintf(fp,"price calculated %f\n",holder);
-fclose(fp);
-
-fp = fopen("prn","w");
-fprintf(fp,"stock %s price %d ow %f\n",stock_array[stockno].name,stock_array[stockno].price,exp(q_int_rate * t));
-fclose(fp);
-
-*/
-
+	DPRINTF("price calculated %f\n",holder);
+	DPRINTF("stock %s price %d ow %f\n",stock_array[stockno].name,stock_array[stockno].price,exp(q_int_rate * t));
 
 	if(holder < ((53.0 - ((float) week)) * 4.0))
 		holder = (53.0 - ((float) week)) * 4.0;
@@ -1946,11 +1860,7 @@ fclose(fp);
 	if((holder < ((ex_price - stock_array[stockno].price) * 100)) && (com_no == PUT))
 		holder = ((ex_price - stock_array[stockno].price) * 100.0);
 
-/*
-fp = fopen("prn","w");
-fprintf(fp,"price %f\n",holder);
-fclose(fp);
-*/
+	DPRINTF("price %f\n",holder);
 
 	return (round(holder));
 }
@@ -1978,34 +1888,6 @@ static void bonds(int units) {
 
 static void init() {
 	int i, x;
-
-	/* int tries = 0;
-
-	   for (i = 0; i < 5; ++i)
-	   id[i] = '0';
-	   id[5] = '\0';
-	   chk();
-	   while ((tries < 3) && (strcmp(id,"00000") == 0))
-	   {
-	   chknum(id);
-	   ++tries;
-	   }
-	   if (strcmp(id,"00000") == 0)
-	   {
-	   sprintf(tempstr,"FATAL DISK ERROR\n");
-	   TxWrite(rp,tempstr);
-	   exit();
-	   }
-	   else if (strcmp(id,"10799") != 0)
-	   {
-	   printf("INVALID DISK IN USE\n");
-	   exit();
-	   }
-	   chkser(serial);
-	   cursor(22,9);
-	   printf("Serial No. #%-s",serial);
-
-	 */
 
 /* initialize first quarter history */
 
@@ -2056,11 +1938,8 @@ static void init() {
 }				/* procedure initialize */
 
 static void getstd(char *infile) {
-	FILE *in;
 	int i;
-	char *fgets();
-
-	in = fopen(infile, "r");
+	FILE *in = fopen(infile, "r");
 	for(i = 0; i < 30; ++i) {
 		fgets(std_mssgs.item[i].string, 75, in);
 		std_mssgs.item[i].intr = get_float(in);
@@ -2600,7 +2479,6 @@ static void add_auto_exec(int auto_minus, int auto_plus, int option, int opt_pri
 	if((cur_player == &players[0] + player - 1) && (scr_status == AUTOSUP))
 		write_auto(count);
 	cursor(24, 0);
-
 }
 
 /************************************************************/
@@ -2613,7 +2491,6 @@ static void auto_display() {
 	for(counter = 0; counter < cur_player->auto_count; ++counter)
 		write_auto(counter);
 	cursor(24, 0);
-
 }
 
 
@@ -2697,7 +2574,6 @@ static void write_auto(int position) {
 		sprintf(tempstr, "%3s", " - ");
 		TxWrite(rp, tempstr);
 	}
-
 }
 
 static void clear_auto(int position) {
@@ -2776,39 +2652,23 @@ static float opt_value(int player, int position) {
 	else
 		stock_price = stock_array[ptr->auto_ptr[position]->stock_no].price;
 
-/*
-fp = fopen("prn","w");
-fprintf(fp,"stock price is %d\n",stock_price);
-fclose(fp);
-*/
+	DPRINTF("stock price is %d\n",stock_price);
 
 	if(ptr->auto_ptr[position]->option_type == CALL)
 		difference = (float) (((int) stock_price) - ((int) ptr->auto_ptr[position]->option_price));
 	else
 		difference = (float) (((int) ptr->auto_ptr[position]->option_price) - ((int) stock_price));
 
-/*
-fp = fopen("prn","w");
-fprintf(fp,"difference is %f\n",difference);
-fclose(fp);
-*/
+	DPRINTF("difference is %f\n",difference);
 
 	difference *= (100.0 * ((float) ptr->auto_ptr[position]->units));
-
-/*
-fp = fopen("prn","w");
-fprintf(fp,"difference is now %f\n",difference);
-fclose(fp);
-*/
+	DPRINTF("difference is now %f\n",difference);
 
 	if(difference > 0)
 		return (difference);
 	else
 		return (0);
 }
-
-
-
 
 /****************************************************************************/
 /*    This deletes the specified auto exec from the specified player. It    */
@@ -2897,56 +2757,6 @@ static void chk_autos(int stockno) {
 	}
 }
 
-
-/*
-quit()
-  {
-    FILE *score;
-    int tplayer,player;
-    double tscore,h_score;
-    char name[21];
-    char *fgets();
-    float get_float();
-
-    tscore = 0;
-    for (player = 0; player < no_of_players; ++player)
-      {
-        calc_netw(player + 1);
-        if (players[player].net_worth > tscore)
-          {
-            tscore = players[player].net_worth;
-            tplayer = player;
-          }
-      }
-    score = fopen("score","r");
-    if (score != NULL)
-      {
-        fgets(name,20,score);
-        h_score = get_float(score);
-        fclose(score);
-        if (tscore > h_score)
-            goto new;
-        else
-          {
-            sprintf(tempstr,"HIGH SCORE TO DATE: \n %s %f\n",name,h_score);
-            TxWrite(rp,tempstr);
-            return(0);
-          }
-      }
-    new:
-    clear_line();
-    sprintf(tempstr,"CONGRAGULATIONS %s,\n\n     NEW HIGH SCORE %d\n",players[tplayer].name,tscore);
-    TxWrite(rp,tempstr);
-    if (tscore < 5000)
-      printf("\n\nNOT TOO IMPRESSIVE REALLY...\n");
-    score = fopen("score","w");
-    fprintf(score,"%-20s %f\n",players[tplayer].name,tscore);
-    fclose(score);
-  }
-
-
-*/
-
 static void upd_coh() {
 	if((scr_status != RANKINGSUP) && (scr_status != GRAPHUP)) {
 		cursor(22, 5);
@@ -3014,7 +2824,6 @@ static void upd_quarter() {
 	TxWrite(rp, tempstr);
 
 	cursor(24, com_char_count);
-
 }
 
 static void upd_year() {
@@ -3118,11 +2927,9 @@ static void load_screen() {
 
 static void screen_upd(void) {
 	int counter;
-
 	for(counter = 0; counter < screen_count; ++counter) {
 		write_stock(counter, counter);
 	}
-
 }
 
 static double calc_netw(int player) {
@@ -3174,9 +2981,7 @@ static void upd_stock(int stockno) {
 	counter = 0;
 
 	if(scr_status == STOCKSUP) {
-		while((scr_ptr[tally]->stock_no != stockno) && (tally < screen_count)) {
-			++tally;
-		}
+		while((scr_ptr[tally]->stock_no != stockno) && (tally < screen_count)) ++tally;
 
 		/* if the stock is a new acquisition */
 
@@ -3248,8 +3053,6 @@ static void upd_stock(int stockno) {
 			}
 	continue3:	if((cur_player->portfolio[stockno].shares == 0) && (!stop))
 				make_call = TRUE;
-
-
 		}
 		/* end: update a current holding */
 	continue4:;
@@ -3952,11 +3755,7 @@ int main() {
 			k = ((float) y_mssg_count - 0.00001);
 			l = j * k;
 			messno = (int) l;
-/*
-fp = fopen("prn","w");
-fprintf(fp,"%f %f %f %f %d  %d\n",j,k,l,m,messno,y_mssg_count);
-fclose(fp);
-*/
+			DPRINTF("%f %f %f %f %d  %d\n",j,k,l,m,messno,y_mssg_count);
 
 			if(yrly_mssgs.item[messno].used == FALSE) {
 
@@ -4097,10 +3896,8 @@ fclose(fp);
 				timer1.hour_changed = TRUE;
 			}
 		}
-
 	}			/* while year != 1985 nor 6 */
 
 	quit();
 	return 0;
-
-}				/* end main */
+}
