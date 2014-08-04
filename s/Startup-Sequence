@@ -1,0 +1,5 @@
+echo " "
+echo " "
+echo "********  loading ftm - please wait  ********"
+ftm
+
