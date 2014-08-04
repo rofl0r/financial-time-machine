@@ -1,1 +1,0 @@
-chknum(num)char *num;  {    num[0] = '1';    num[1] = '0';    num[2] = '7';    num[3] = '9';    num[4] = '9';  }chkser(ser)char *ser;  {    ser[0] = ' ';    ser[1] = 'T';    ser[2] = 'E';    ser[3] = 'S';    ser[4] = 'T';    ser[5] = ' ';    ser[6] = ' ';  }
