@@ -1,7 +1,5 @@
 #include <stdio.h>
 #define STUB(X) long X () { dprintf(2, "warning: %s unimplemented\n", __FUNCTION__); return 0;}
-STUB(OpenLibrary)
-
 /* clib/exec_protos.h */
 STUB(OpenDevice)
 // BYTE OpenDevice( UBYTE *devName, unsigned long unit,

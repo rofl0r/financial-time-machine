@@ -207,9 +207,6 @@ int tries;
 
 float vx1, vx2, vx3, vx4;           /* variances for option use */
 
-struct IntuitionBase *IntuitionBase;
-struct GfxBase *GfxBase;
-
 struct TextAttr MyFont =
   {
   "topaz.font",
@@ -519,12 +516,6 @@ main()
   stock_array[30].b2 = 0.;
   stock_array[30].b3 = 0.;
   stock_array[30].e = 0.;
-    IntuitionBase = (struct IntuitionBase *)
-                    OpenLibrary("intuition.library",0);
-    if (IntuitionBase == NULL) { printf("intuition failed"); exit(FALSE);}
-
-    GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0);
-    if (GfxBase == NULL) {printf("GfxBase failed"); exit(FALSE); }
 
     if ((S = (struct Screen *) OpenScreen(&NS)) == NULL)
        {printf("screen failed"); exit(FALSE);}
