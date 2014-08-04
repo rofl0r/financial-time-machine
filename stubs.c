@@ -39,7 +39,7 @@ STUB(CloseScreen)
 // BOOL CloseScreen( struct Screen *screen );
 
 /* clib/graphics_protos.h */
-STUB(SetRGB4)
+//STUB(SetRGB4)
 // void SetRGB4( struct ViewPort *vp, long index, unsigned long red,
 //        unsigned long green, unsigned long blue );
 STUB(SetBPen)

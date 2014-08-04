@@ -120,8 +120,8 @@ shutdown()
   CloseDevice(ioa);
   DeletePort(ioa->ioa_Request.io_Message.mn_ReplyPort);
   FreeMem(ioa,sizeof(*ioa));
-  CloseWindow(W);
-  CloseScreen(S);
+//  CloseWindow(W);
+//  CloseScreen(S);
   exit(TRUE);
   }
 

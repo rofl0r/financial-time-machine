@@ -215,6 +215,7 @@ struct TextAttr MyFont =
   FPF_ROMFONT,
   };
 
+#if 0
 struct NewScreen NS =
   {
   0,
@@ -231,9 +232,9 @@ struct NewScreen NS =
   NULL,
   NULL,
   };
-
+#endif
 struct IntuiMessage *messg;
-
+#if 0
 struct Screen *S;
 struct NewWindow NW =
   {
@@ -258,12 +259,13 @@ struct NewWindow NW =
   };
 
 struct Window *W;
+#endif
 extern struct MsgPort *CreatePort();
 unsigned char allocationMap[] = {1, 2, 4, 8};
 signed char si[] = {0,49,90,117,127,117,90,49,0,-49,-90,-117,-127,-117,-90,-49};
 struct IOAudio *ioa;
 struct RastPort *rp;
-struct ViewPort *vp;
+//struct ViewPort *vp;
 char tempstr[250];
 extern char headers1();
 
@@ -517,6 +519,7 @@ main()
   stock_array[30].b3 = 0.;
   stock_array[30].e = 0.;
 
+#if 0
     if ((S = (struct Screen *) OpenScreen(&NS)) == NULL)
        {printf("screen failed"); exit(FALSE);}
 
@@ -527,13 +530,14 @@ main()
     rp = W->RPort;
     vp = (struct ViewPort *)ViewPortAddress(W);
 
+// this seems to override the color of the mouse pointer
     SetRGB4(vp,0,0,0,0);
     SetRGB4(vp,1,15,15,15);
     SetRGB4(vp,2,15,0,0);
     SetRGB4(vp,3,15,15,0);
     SetRGB4(vp,4,0,15,0);
     SetRGB4(vp,5,0,0,15);
-
+#endif
 
     ioa = (struct IOAudio *) AllocMem(sizeof(*ioa),
           MEMF_PUBLIC | MEMF_CLEAR);
@@ -744,7 +748,7 @@ cont4:    getyear(year);      /** no overlay as of 11/22/85  **/
                                   stop = TRUE;
                                 }
                               break;
-                   default:   DisplayBeep(S);
+                   default:   DisplayBeep();
                               hit = NOT_FOUND;
                               break;
                   }
@@ -845,7 +849,7 @@ goto continue1; }
 goto continue1; }
             if (com_char_count == 29)      /* buffer is full */
               {
-                 DisplayBeep(S);
+                 DisplayBeep();
 goto continue1; }
             if (isdigit(c))
               {
@@ -873,7 +877,7 @@ goto continue1; }
                 sprintf(tempstr,"%c",c);
                 TxWrite(rp,tempstr);
 goto continue1; }
-                DisplayBeep(S);
+                DisplayBeep();
 
           }  /* end if kbhit() */
 

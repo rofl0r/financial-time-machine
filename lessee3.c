@@ -158,7 +158,7 @@ headers2()
                 ++junk3_counter;
                 if (junk3_counter == 20)
                   {
-                    DisplayBeep(S);
+                    DisplayBeep();
                     --junk3_counter;
                   }
                 else
@@ -185,7 +185,7 @@ headers2()
               }
             else if (c != NULL)
               {
-                DisplayBeep(S);
+                DisplayBeep();
               }
 re2:       c = c;
           }
