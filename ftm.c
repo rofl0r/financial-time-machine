@@ -1340,6 +1340,7 @@ static void margin() {
             for (player = 0; player < no_of_players; ++player)
               {
                 ptr = &players[0]+player;
+               /* FIXME: the original calc_netw function was missing a return statement, so this assignment is probably a bug */
                 y = calc_netw(player + 1);
                 if (!q_break)
                   y -= (((float) ptr->bonds) * 1000.0);
@@ -2416,7 +2417,7 @@ re2:    yorn = kbhit();
 }
 
 
-static void compare (int start, int finish, char* com_array,int method) {
+static int compare (int start, int finish, char* com_array,int method) {
       int counter;
       int case_count;
       int cases;
@@ -2464,7 +2465,7 @@ static void compare (int start, int finish, char* com_array,int method) {
         return(NOT_FOUND);
 }
 
-static int set_top_screen() {
+static void set_top_screen(void) {
   int junk;
 
   upd_quarter();
@@ -3432,8 +3433,8 @@ static double calc_netw(int player) {
     total += ((float) players[player - 1].bonds) * 1000.0;
 
     players[player - 1].net_worth = total;
-
-  }
+    return total;
+}
 
 static void upd_stock(int stockno) {
     int tally, counter;
