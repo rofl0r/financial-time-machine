@@ -80,7 +80,7 @@ static int i;
 #define SHORT 0
 
 
-#define F10 17408          /** for JUMPing.  Added 11/22/85 **/
+#define F10 -80          /** for JUMPing.  Added 11/22/85 **/
 
 typedef struct stock {
                         char name[4];
@@ -277,7 +277,6 @@ static TIMER timer3;                   /* for event gap timing */
 static char message;                    /* true if program message displayed */
 static char scr_status = STOCKSUP;      /* either stocks,autos,or rankings are up */
 static char in_progress;        /* in the middle of a news event ? */
-static int iter;                       /* the number of times an event has an effect */
 static char mess_type;                  /* yearly or standard message in use */
 static char q_break;           /* true at end of quarter */
 static int no_of_players;              /* how many players we have, set at beginning */
@@ -326,27 +325,11 @@ static int half_way = -2;                  /* half thru reset message */
 static int g;                              /* junk */
 static char emphasis;
 
-static char id[6] = "00000";
-static char serial[8] = "0000000";
-
-static int tries;
-
 static float vx1, vx2, vx3, vx4;           /* variances for option use */
-
-static struct TextAttr MyFont =  {
-  "topaz.font",
-  TOPAZ_EIGHTY,
-  FS_NORMAL,
-  FPF_ROMFONT,
-};
-
-static struct IntuiMessage *messg;
-
-static unsigned char allocationMap[] = {1, 2, 4, 8};
-static signed char si[] = {0,49,90,117,127,117,90,49,0,-49,-90,-117,-127,-117,-90,-49};
+//input wave for audio ticker
+//static signed char si[] = {0,49,90,117,127,117,90,49,0,-49,-90,-117,-127,-117,-90,-49};
 
 static struct RastPort *rp;
-static struct ViewPort *vp;
 static char tempstr[250];
 
 static void save();
@@ -377,18 +360,8 @@ STUB(Delay)
 // void Delay( long timeout );
 
 /* clib/intuition_protos.h */
-STUB(ViewPortAddress)
-// struct ViewPort *ViewPortAddress( struct Window *window );
 STUB(DisplayBeep)
 //void DisplayBeep( struct Screen *screen );
-STUB(OpenWindow)
-// struct Window *OpenWindow( struct NewWindow *newWindow );
-STUB(CloseWindow)
-// void CloseWindow( struct Window *window );
-STUB(OpenScreen)
-// struct Screen *OpenScreen( struct NewScreen *newScreen );
-STUB(CloseScreen)
-// BOOL CloseScreen( struct Screen *screen );
 
 /* clib/graphics_protos.h */
 STUB(SetBPen)
@@ -540,11 +513,7 @@ fclose(fp);
 }
 
 float variance(int stockno) {
-    int i;
-    float j;
     float tvx1,tvx2,tvx3,tvx4;
-
-
     tvx1 = vx1 + factor1;
     tvx2 = vx2 + factor2;
     tvx3 = vx3 + factor3;
@@ -602,9 +571,8 @@ return 0;
 }
 
 static void end_year(void) {
-    int player, counter, difference, counter2;
+    int player, counter;
     PLAYER *play_ptr;
-    float earnings;
 
     clear_bottom();
     scr_status = RANKINGSUP;
@@ -670,8 +638,7 @@ static void end_year(void) {
 
 static void execute(int com_no, int units,int stock_no,int price,int auto_minus, int auto_plus, int player) {
     AUTOS *ptr;
-    PLAYER *play_ptr;
-    int counter,tplayer;
+    int counter;
 
 
     switch (com_no)
@@ -971,9 +938,6 @@ static void execute(int com_no, int units,int stock_no,int price,int auto_minus,
      case JUMP:   jump_weeks = units;
         break;
 
-
-
-
       }
     calc_netw(player);
     if ((scr_status == STOCKSUP) || (scr_status == AUTOSUP))
@@ -1132,7 +1096,7 @@ reset_it endp
 #define BLUE 5
 
 static void graph(int stockno, int year) {
-    int x,y;
+    int x;
     int color,tcolor;
 
     clear_top();
@@ -1580,7 +1544,7 @@ static void headers2() {
             char c;
 
             c = (char) kbhit();
-            if (c == NULL) goto re2;
+            if (c == 0) goto re2;
             if (isupper(c) || islower(c) || (c == ' ') || (c == '.') || (c == ','))
               {
                 ++junk3_counter;
@@ -1611,7 +1575,7 @@ static void headers2() {
                     cursor(14,9+junk3_counter);
                   }
               }
-            else if (c != NULL)
+            else if (c != 0)
               {
                 DisplayBeep();
               }
@@ -1680,10 +1644,8 @@ re2:       c = c;
 }
 
 static void getyear(int year) {
-    float f1,f2,f3,f4;
     FILE *in;
     int i,x,counter,found;
-    char *fgets(),c;
     char datfile[11];
 
     x = 1000;
@@ -1788,7 +1750,6 @@ fclose(fp);
 /***************************************************/
 /************  begin main body of event()  *********/
 /***************************************************/
-static int outc = 1;
 static float x4,E,R;
 static float gamma1 = 1.2;
 static float gamma2 = .24;
@@ -2047,7 +2008,7 @@ static void save() {
 /********************************************/
 /*** begin main body of procedure OPTION ****/
 /********************************************/
-
+/* unused - maybe was called from one of the missing functions */
 static float option(int com_no, int stockno, int ex_price) {
     float d1, d2, vari, factor1, factor2, holder;
     float t;
@@ -2168,10 +2129,8 @@ static void bonds(int units) {
 
 static void init() {
     int i, x;
-    int tries;
 
-
- /*   tries = 0;
+ /* int tries = 0;
 
     for (i = 0; i < 5; ++i)
       id[i] = '0';
@@ -2250,9 +2209,8 @@ static void init() {
 }  /* procedure initialize */
 
 static void getstd(char* infile) {
-    float f1,f2,f3,f4;
     FILE *in;
-    int i,x;
+    int i;
     char *fgets();
 
     in = fopen(infile,"r");
@@ -2276,7 +2234,6 @@ static int headers1(void) {
     char file_name[8];
     int yorn,forh;
     int temp_year;
-    int junk1_counter, junk2_counter, junk3_counter;
     char c;
 
     cursor(7,7);
@@ -2416,7 +2373,7 @@ re2:    yorn = kbhit();
     return(FALSE);
 }
 
-
+/* unused - maybe was called from one of the missing functions */
 static int compare (int start, int finish, char* com_array,int method) {
       int counter;
       int case_count;
@@ -2466,8 +2423,6 @@ static int compare (int start, int finish, char* com_array,int method) {
 }
 
 static void set_top_screen(void) {
-  int junk;
-
   upd_quarter();
 
   cursor(0,27);
@@ -2577,6 +2532,7 @@ SetAPen(rp,1);
 }
 
 
+/* unused - maybe was called from one of the missing funcs */
 static void set2_bottom_screen() {
     int x;
 
@@ -3012,7 +2968,7 @@ static void upd_autos(int stockno) {
 static float opt_value(int player, int position) {
     PLAYER *ptr;
     float difference;
-    int stock_price,waste;
+    int stock_price;
 
     ptr = &players[0] + player - 1;
     if (ptr == cur_player)
@@ -3060,7 +3016,7 @@ fclose(fp);
 /****************************************************************************/
 
 static void del_auto(int position, int player) {
-    int counter,waste;
+    int counter;
     AUTOS *tmp_ptr;
 
     tmp_ptr = players[player - 1].auto_ptr[position];
@@ -3538,113 +3494,6 @@ continue3:            if ((cur_player->portfolio[stockno].shares == 0) && (!stop
 continue4:;      }  /* end: if rankings aren't up */
 }
 
-#if 0
-#define NONE 0
-#define NOT_FOUND -1
-#define COMMAND 1
-#define STOCK 2
-#define ALL -2
-
-#define BONDVALUE 1000
-#define STOCKLIMIT 9            /* max number of stocks one can hold */
-#define AUTOLIMIT  9            /* max number of autos and options */
-
-#define SPLITPRICE 200
-#define GAMMA1 1.5
-#define GAMMA2  .3
-#define GAMMA3  .3
-
-#define TRUE 1
-#define FALSE 0
-#define ESC '\033'
-#define CR 13
-#define BACKSP '\010'
-#define BREAK '\t'
-#define BEEP '\07'
-#define ERASE_CH "'\08' '\08'"
-#define NO_OF_COMMANDS 14
-#define NO_OF_STOCKS 31
-#define JUMP 13
-#define LIMIT 12
-#define EXERCISE 11
-#define GRAPH 10
-#define CASH 9
-#define SAVE 8
-#define BONDS 7
-#define MARGIN 6
-#define QUIT 5
-#define DELETE 4
-#define PUT 3
-#define CALL 2
-#define SELL 1
-#define BUY 0
-#define AUTOBUY 20
-#define AUTOSELL 21
-#define NON_AUTO 1
-#define ON 1
-#define OFF 2
-#define CHANGEOVERTIME 10               /* 10 seconds to complete command */
-#define CLICK_CHANGE '\021'
-#define NO_YRLY_MESSAGES 15
-#define NO_STD_MESSAGES 30
-#define YRLY 0
-int i;
-#define STD 1
-#define GOLD 26
-#define REALESTATE 25
-#define MMMS 30
-#define WEEKLENGTH 25
-#define DIFFERENCE 48
-#define STOCKSUP 1
-#define AUTOSUP 2
-#define RANKINGSUP 3
-#define GRAPHUP 4
-
-#define MAXPLAYERS 4
-#define LOTLIMIT 9999
-#define TICK_SIZE 3
-#define LONG 1
-#define SHORT 0
-
-
-#define F10 -80
-          /** for JUMPing.  Added 11/22/85 **/
-
-HISTORY history[NO_OF_STOCKS];
-
-
-
-ASTOCK stock_array[NO_OF_STOCKS];
-
-
-SCREEN screen[STOCKLIMIT];
-
-SCREEN *scr_ptr[STOCKLIMIT];
-
-int screen_count = 0;
-
-YMESSS yrly_mssgs;
-
-int y_mssg_count;
-
-SMESSS std_mssgs;
-
-
-FILE *fp,*fopen();
-
-TICK_ITEM *cur_tick;
-TICK_ITEM ticker[TICK_SIZE];
-PLAYER players[MAXPLAYERS];
-PLAYER *cur_player;
-
-
-struct IntuiMessage *messg;
-struct RastPort *rp;
-char tempstr[250];
-
-#endif
-
-
 int main() {
     int stock;
     int ic;
@@ -4002,7 +3851,7 @@ cont4:    getyear(year);      /** no overlay as of 11/22/85  **/
     while ((year != 1985) && (year != 6))
       {
 
-        if (((ic = kbhit()) != NULL) || ((q_break == TRUE) && (jump_weeks > 0) && (make_call == FALSE)))
+        if (((ic = kbhit()) != 0) || ((q_break == TRUE) && (jump_weeks > 0) && (make_call == FALSE)))
           {
 
             if (message)
@@ -4472,8 +4321,6 @@ fclose(fp);
 
         if (timer2.status == ON)
           {
-            int x;
-
 /* if time for changing players has run out then change 'em */
 
             if (( time > timer2.count) &&
@@ -4550,7 +4397,7 @@ fclose(fp);
       }  /* while year != 1985 nor 6 */
 
     quit();
+    return 0;
 
-
-  }  /* end main */
+}  /* end main */
 
