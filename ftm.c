@@ -4178,7 +4178,7 @@ goto continue1; }
                    TRUE)
                   {
                     clear_line();
-                    upd_com_line(com_no,units,stock_no,trans_price,autobuy,autosell,&com_array,&com_char_count);
+                    upd_com_line(com_no,units,stock_no,trans_price,autobuy,autosell,com_array,&com_char_count);
                   }
 
 goto continue1; }
