@@ -103,10 +103,42 @@ typedef struct {
 } HISTORY;
 
 static HISTORY history[NO_OF_STOCKS];
-static ASTOCK stock_array[NO_OF_STOCKS];
+static ASTOCK stock_array[NO_OF_STOCKS] = {
+	[ 0] = {.price = 100, .name = "KM", .b1 = 1.4, .b2 = .8, .b3 = 0, .e = .2},
+	[ 1] = {.price = 100, .name = "GE", .b1 = 1.3, .b2 = .4, .b3 = -.2, .e = .3},
+	[ 2] = {.price = 100, .name = "AMR", .b1 = 2.1, .b2 = .9, .b3 = .2, .e = .5},
+	[ 3] = {.price = 100, .name = "ZE", .b1 = 1.7, .b2 = .0, .b3 = 0, .e = .5},
+	[ 4] = {.price = 100, .name = "MYG", .b1 = 1.4, .b2 = .5, .b3 = 0, .e = .3},
+	[ 5] = {.price = 100, .name = "GM", .b1 = 1.3, .b2 = .8, .b3 = .3, .e = .2},
+	[ 6] = {.price = 100, .name = "SOI", .b1 = 1., .b2 = .4, .b3 = -.3, .e = .3},
+	[ 7] = {.price = 100, .name = "USS", .b1 = 1.1, .b2 = .6, .b3 = 0, .e = .3},
+	[ 8] = {.price = 100, .name = "ITT", .b1 = 1.6, .b2 = .0, .b3 = 0, .e = 1.2},
+	[ 9] = {.price = 100, .name = "MOB", .b1 = .9, .b2 = .2, .b3 = .8, .e = .2},
+	[10] = {.price = 100, .name = "PG", .b1 = .85, .b2 = .3, .b3 = 0, .e = 1.2},
+	[11] = {.price = 100, .name = "EK", .b1 = 1.2, .b2 = 0., .b3 = 0, .e = .4},
+	[12] = {.price = 100, .name = "AH", .b1 = 1., .b2 = 1., .b3 = .2, .e = .3},
+	[13] = {.price = 100, .name = "KMB", .b1 = .7, .b2 = .1, .b3 = 0, .e = .1},
+	[14] = {.price = 100, .name = "DE", .b1 = 1.3, .b2 = 1.3, .b3 = 0, .e = .4},
+	[15] = {.price = 100, .name = "ED", .b1 = .65, .b2 = 1.1, .b3 = 0, .e = .1},
+	[16] = {.price = 100, .name = "AA", .b1 = 1.7, .b2 = 1.2, .b3 = .1, .e = .3},
+	[17] = {.price = 100, .name = "PGL", .b1 = .2, .b2 = 0., .b3 = -.4, .e = 1.5},
+	[18] = {.price = 100, .name = "MD", .b1 = 2., .b2 = .2, .b3 = -.5, .e = .8},
+	[19] = {.price = 100, .name = "T", .b1 = 1.2, .b2 = 0., .b3 = 0., .e = .7},
+	[20] = {.price = 100, .name = "MTC", .b1 = 1., .b2 = .2, .b3 = 0, .e = .4},
+	[21] = {.price = 100, .name = "UNP", .b1 = 1.7, .b2 = 1.4, .b3 = 0, .e = .9},
+	[22] = {.price = 100, .name = "HM", .b1 = -.2, .b2 = .3, .b3 = -.5, .e = .8},
+	[23] = {.price = 100, .name = "SMC", .b1 = 2.2, .b2 = 1.4, .b3 = 0, .e = 1.1},
+	[24] = {.price = 100, .name = "NOM", .b1 = 1.3, .b2 = 1., .b3 = -.3, .e = 1.6},
+	[25] = {.price = 100, .name = "RES", .b1 = .05, .b2 = .9, .b3 = 0, .e = .25},
+	[26] = {.price = 100, .name = "GLD", .b1 = -.1, .b2 = 1.1, .b3 = -.3, .e = .6},
+	[27] = {.price = 100, .name = "WU", .b1 = -.2, .b2 = -.4, .b3 = 0, .e = .6},
+	[28] = {.price = 100, .name = "BND", .b1 = .05, .b2 = .7, .b3 = 0, .e = .0},
+	[29] = {.price = 100, .name = "IBM", .b1 = .9, .b2 = .3, .b3 = 1.2, .e = .6},
+	[30] = {.price = 100, .name = "IMF", .b1 = .0, .b2 = .0, .b3 = 0, .e = .0},
+};
+
 static char alpha[] =
-    { 16, 12, 2, 28, 14, 15, 11, 1, 26, 5, 22, 29, 8, 0, 13, 18, 9, 20, 4, 24, 10, 17, 25, 23, 6, 19, 21, 7, 27, 3,
-30 };
+    { 16, 12, 2, 28, 14, 15, 11, 1, 26, 5, 22, 29, 8, 0, 13, 18, 9, 20, 4, 24, 10, 17, 25, 23, 6, 19, 21, 7, 27, 3, 30 };
 
 typedef struct {
 	int stock_no;
@@ -3068,243 +3100,6 @@ int main() {
 	int getkb();
 	int kbhit();
 	double pow(), exp(), log(), round();
-
-	for(i = 0; i < 31; i++)
-		stock_array[i].price = 100;
-	stock_array[0].name[0] = 'K';
-	stock_array[0].name[1] = 'M';
-	stock_array[0].name[2] = '\0';
-	stock_array[0].b1 = 1.4;
-	stock_array[0].b2 = .8;
-	stock_array[0].b3 = 0.;
-	stock_array[0].e = .2;
-	stock_array[1].name[0] = 'G';
-	stock_array[1].name[1] = 'E';
-	stock_array[1].name[2] = '\0';
-	stock_array[1].b1 = 1.3;
-	stock_array[1].b2 = .4;
-	stock_array[1].b3 = -.2;
-	stock_array[1].e = .3;
-	stock_array[2].name[0] = 'A';
-	stock_array[2].name[1] = 'M';
-	stock_array[2].name[2] = 'R';
-	stock_array[2].name[3] = '\0';
-	stock_array[2].b1 = 2.1;
-	stock_array[2].b2 = .9;
-	stock_array[2].b3 = .2;
-	stock_array[2].e = .5;
-	stock_array[3].name[0] = 'Z';
-	stock_array[3].name[1] = 'E';
-	stock_array[3].name[2] = '\0';
-	stock_array[3].b1 = 1.7;
-	stock_array[3].b2 = 0.;
-	stock_array[3].b3 = 0.;
-	stock_array[3].e = .5;
-	stock_array[4].name[0] = 'M';
-	stock_array[4].name[1] = 'Y';
-	stock_array[4].name[2] = 'G';
-	stock_array[4].name[3] = '\0';
-	stock_array[4].b1 = 1.4;
-	stock_array[4].b2 = .5;
-	stock_array[4].b3 = 0.;
-	stock_array[4].e = .3;
-	stock_array[5].name[0] = 'G';
-	stock_array[5].name[1] = 'M';
-	stock_array[5].name[2] = '\0';
-	stock_array[5].b1 = 1.3;
-	stock_array[5].b2 = .8;
-	stock_array[5].b3 = .3;
-	stock_array[5].e = .2;
-	stock_array[6].name[0] = 'S';
-	stock_array[6].name[1] = 'O';
-	stock_array[6].name[2] = 'I';
-	stock_array[6].name[3] = '\0';
-	stock_array[6].b1 = 1.;
-	stock_array[6].b2 = .4;
-	stock_array[6].b3 = -.3;
-	stock_array[6].e = .3;
-	stock_array[7].name[0] = 'U';
-	stock_array[7].name[1] = 'S';
-	stock_array[7].name[2] = 'S';
-	stock_array[7].name[3] = '\0';
-	stock_array[7].b1 = 1.1;
-	stock_array[7].b2 = .6;
-	stock_array[7].b3 = 0.;
-	stock_array[7].e = .3;
-	stock_array[8].name[0] = 'I';
-	stock_array[8].name[1] = 'T';
-	stock_array[8].name[2] = 'T';
-	stock_array[8].name[3] = '\0';
-	stock_array[8].b1 = 1.6;
-	stock_array[8].b2 = 0.;
-	stock_array[8].b3 = 0.;
-	stock_array[8].e = 1.2;
-	stock_array[9].name[0] = 'M';
-	stock_array[9].name[1] = 'O';
-	stock_array[9].name[2] = 'B';
-	stock_array[9].name[3] = '\0';
-	stock_array[9].b1 = .9;
-	stock_array[9].b2 = .2;
-	stock_array[9].b3 = .8;
-	stock_array[9].e = .2;
-	stock_array[10].name[0] = 'P';
-	stock_array[10].name[1] = 'G';
-	stock_array[10].name[2] = '\0';
-	stock_array[10].b1 = .85;
-	stock_array[10].b2 = .3;
-	stock_array[10].b3 = 0.;
-	stock_array[10].e = 1.2;
-	stock_array[11].name[0] = 'E';
-	stock_array[11].name[1] = 'K';
-	stock_array[11].name[2] = '\0';
-	stock_array[11].b1 = 1.2;
-	stock_array[11].b2 = 0.;
-	stock_array[11].b3 = 0.;
-	stock_array[11].e = .4;
-	stock_array[12].name[0] = 'A';
-	stock_array[12].name[1] = 'H';
-	stock_array[12].name[2] = '\0';
-	stock_array[12].b1 = 1.;
-	stock_array[12].b2 = 1.;
-	stock_array[12].b3 = .2;
-	stock_array[12].e = .3;
-	stock_array[13].name[0] = 'K';
-	stock_array[13].name[1] = 'M';
-	stock_array[13].name[2] = 'B';
-	stock_array[13].name[3] = '\0';
-	stock_array[13].b1 = .7;
-	stock_array[13].b2 = .1;
-	stock_array[13].b3 = 0.;
-	stock_array[13].e = .1;
-	stock_array[14].name[0] = 'D';
-	stock_array[14].name[1] = 'E';
-	stock_array[14].name[2] = '\0';
-	stock_array[14].b1 = 1.3;
-	stock_array[14].b2 = 1.3;
-	stock_array[14].b3 = 0.;
-	stock_array[14].e = .4;
-	stock_array[15].name[0] = 'E';
-	stock_array[15].name[1] = 'D';
-	stock_array[15].name[2] = '\0';
-	stock_array[15].b1 = .65;
-	stock_array[15].b2 = 1.1;
-	stock_array[15].b3 = 0.;
-	stock_array[15].e = .1;
-	stock_array[16].name[0] = 'A';
-	stock_array[16].name[1] = 'A';
-	stock_array[16].name[2] = '\0';
-	stock_array[16].b1 = 1.7;
-	stock_array[16].b2 = 1.2;
-	stock_array[16].b3 = .1;
-	stock_array[16].e = .3;
-	stock_array[17].name[0] = 'P';
-	stock_array[17].name[1] = 'G';
-	stock_array[17].name[2] = 'L';
-	stock_array[17].name[3] = '\0';
-	stock_array[17].b1 = .2;
-	stock_array[17].b2 = 0.;
-	stock_array[17].b3 = -.4;
-	stock_array[17].e = 1.5;
-	stock_array[18].name[0] = 'M';
-	stock_array[18].name[1] = 'D';
-	stock_array[18].name[2] = '\0';
-	stock_array[18].b1 = 2.0;
-	stock_array[18].b2 = .2;
-	stock_array[18].b3 = -.5;
-	stock_array[18].e = .8;
-	stock_array[19].name[0] = 'T';
-	stock_array[19].name[1] = '\0';
-	stock_array[19].b1 = 1.2;
-	stock_array[19].b2 = 0.;
-	stock_array[19].b3 = 0.;
-	stock_array[19].e = .7;
-	stock_array[20].name[0] = 'M';
-	stock_array[20].name[1] = 'T';
-	stock_array[20].name[2] = 'C';
-	stock_array[20].name[3] = '\0';
-	stock_array[20].b1 = 1.;
-	stock_array[20].b2 = .2;
-	stock_array[20].b3 = 0.;
-	stock_array[20].e = .4;
-	stock_array[21].name[0] = 'U';
-	stock_array[21].name[1] = 'N';
-	stock_array[21].name[2] = 'P';
-	stock_array[21].name[3] = '\0';
-	stock_array[21].b1 = 1.7;
-	stock_array[21].b2 = 1.4;
-	stock_array[21].b3 = 0.;
-	stock_array[21].e = .9;
-	stock_array[22].name[0] = 'H';
-	stock_array[22].name[1] = 'M';
-	stock_array[22].name[2] = '\0';
-	stock_array[22].b1 = -.2;
-	stock_array[22].b2 = .3;
-	stock_array[22].b3 = -.5;
-	stock_array[22].e = .8;
-	stock_array[23].name[0] = 'S';
-	stock_array[23].name[1] = 'M';
-	stock_array[23].name[2] = 'C';
-	stock_array[23].name[3] = '\0';
-	stock_array[23].b1 = 2.2;
-	stock_array[23].b2 = 1.4;
-	stock_array[23].b3 = 0.;
-	stock_array[23].e = 1.1;
-	stock_array[24].name[0] = 'N';
-	stock_array[24].name[1] = 'O';
-	stock_array[24].name[2] = 'M';
-	stock_array[24].name[3] = '\0';
-	stock_array[24].b1 = 1.3;
-	stock_array[24].b2 = 1.;
-	stock_array[24].b3 = -.3;
-	stock_array[24].e = 1.6;
-	stock_array[25].name[0] = 'R';
-	stock_array[25].name[1] = 'E';
-	stock_array[25].name[2] = 'S';
-	stock_array[25].name[3] = '\0';
-	stock_array[25].b1 = .05;
-	stock_array[25].b2 = .9;
-	stock_array[25].b3 = 0.;
-	stock_array[25].e = .25;
-	stock_array[26].name[0] = 'G';
-	stock_array[26].name[1] = 'L';
-	stock_array[26].name[2] = 'D';
-	stock_array[26].name[3] = '\0';
-	stock_array[26].b1 = -.1;
-	stock_array[26].b2 = 1.1;
-	stock_array[26].b3 = -.3;
-	stock_array[26].e = 1.2;
-	stock_array[27].name[0] = 'W';
-	stock_array[27].name[1] = 'U';
-	stock_array[27].name[2] = '\0';
-	stock_array[27].b1 = -.2;
-	stock_array[27].b2 = -.4;
-	stock_array[27].b3 = 0;
-	stock_array[27].e = .6;
-	stock_array[28].name[0] = 'B';
-	stock_array[28].name[1] = 'N';
-	stock_array[28].name[2] = 'D';
-	stock_array[28].name[3] = '\0';
-	stock_array[28].b1 = .05;
-	stock_array[28].b2 = .7;
-	stock_array[28].b3 = 0.;
-	stock_array[28].e = 0.;
-	stock_array[29].name[0] = 'I';
-	stock_array[29].name[1] = 'B';
-	stock_array[29].name[2] = 'M';
-	stock_array[29].name[3] = '\0';
-	stock_array[29].b1 = .9;
-	stock_array[29].b2 = .3;
-	stock_array[29].b3 = 1.2;
-	stock_array[29].e = .6;
-	stock_array[30].name[0] = 'I';
-	stock_array[30].name[1] = 'M';
-	stock_array[30].name[2] = 'F';
-	stock_array[30].name[3] = '\0';
-	stock_array[30].b1 = 0.;
-	stock_array[30].b2 = 0.;
-	stock_array[30].b3 = 0.;
-	stock_array[30].e = 0.;
-
 #if 0
 	if((S = (struct Screen *) OpenScreen(&NS)) == NULL) {
 		printf("screen failed");
