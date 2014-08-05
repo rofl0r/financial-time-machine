@@ -65,9 +65,6 @@
 #define NO_YRLY_MESSAGES 15
 #define NO_STD_MESSAGES 30
 #define YRLY 0
-
-static int i;
-
 #define STD 1
 #define GOLD 26
 #define REALESTATE 25
@@ -1425,7 +1422,8 @@ static void headers2() {
 	cursor(10, 6);
 	sprintf(tempstr, "How Many Will Be Playing?");
 	TxWrite(rp, tempstr);
-	re:c = kbhit();
+	re:
+	c = kbhit();
 	no_of_players = c;
 	if(isdigit(no_of_players))
 		no_of_players -= DIFFERENCE;
@@ -1476,7 +1474,8 @@ static void headers2() {
 			} else if(c != 0) {
 				DisplayBeep();
 			}
-	re2:		c = c;
+	re2:
+			c = c;
 		}
 		junk2_counter = 0;
 		while(players[junk1_counter].name[junk2_counter] != '\0')
@@ -2017,7 +2016,8 @@ static int headers1(void) {
 		sprintf(tempstr, "(Type Y or N)");
 		TxWrite(rp, tempstr);
 		cursor(10, 33);
-	re2:	yorn = kbhit();
+	re2:
+		yorn = kbhit();
 		if((yorn == (int) 'Y') || (yorn == (int) 'y')) {
 			return (TRUE);
 		} else if((yorn == (int) 'N') || (yorn == (int) 'n')) {
@@ -2436,7 +2436,7 @@ static void upd_com_line(int com_no, int units, int stock_no, int price, int aut
 
 	variation = 1;
 
-	nextcase:
+nextcase:
 
 	pr = NOT_FOUND;
 	switch (variation) {
@@ -2480,7 +2480,7 @@ static void upd_com_line(int com_no, int units, int stock_no, int price, int aut
 	if(variation <= 3)
 		goto nextcase;
 
-	finish:
+finish:
 
 	*com_char_count = i;
 	cursor(24, 0);
@@ -3083,7 +3083,8 @@ static void upd_stock(int stockno) {
 				TxWrite(rp, tempstr);
 				cursor(24, com_char_count);
 			}
-	continue3:	if((cur_player->portfolio[stockno].shares == 0) && (!stop))
+	continue3:
+			if((cur_player->portfolio[stockno].shares == 0) && (!stop))
 				make_call = TRUE;
 		}
 		/* end: update a current holding */
@@ -3092,14 +3093,10 @@ static void upd_stock(int stockno) {
 }
 
 int main() {
-	int stock;
-	int ic;
+	int stock, ic, i;
 	char c;
 	int junk_counter;	/* a throwaway counter variable */
 	int hit;		/* which PLAYER function key was hit */
-	int getkb();
-	int kbhit();
-	double pow(), exp(), log(), round();
 #if 0
 	if((S = (struct Screen *) OpenScreen(&NS)) == NULL) {
 		printf("screen failed");
@@ -3200,7 +3197,8 @@ int main() {
 	}
 	headers2();
 
-	cont4:getyear(year); /** no overlay as of 11/22/85  **/
+	cont4:
+	getyear(year); /** no overlay as of 11/22/85  **/
 
 	prime_rate = (high_prime + low_prime) / 2.0;
 
@@ -3453,7 +3451,8 @@ int main() {
 
 		/* end if kbhit() */
  /********** BEGIN SCREEN SCROLLING STUFF ****************/
-	continue1:if(timer1.status == ON) {
+	continue1:
+		if(timer1.status == ON) {
 			if(newsline[cur_news_line] == '\n')
 			{
 				if((half_way == -2) && (in_progress == TRUE)) {
