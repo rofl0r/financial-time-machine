@@ -709,7 +709,7 @@ static int gethundredths() {
 	return (getutime64()%1000000)/10000;
 }
 
-#if 1
+#if 0
 float frand() {
 	return ((float) getmicros() / 101.0);
 }
