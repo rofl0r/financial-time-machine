@@ -233,8 +233,8 @@ static const char commands[][9] = {
 	"DELETE",
 	"QUIT",
 	"MARGIN",
-	"T-BILLS",
-	"SAVE",
+	"BONDS", /* original: "T-BILLS" */
+	"SAVE", /* original "KEEP" */
 	"CASH",
 	"GRAPH",
 	"EXERCISE",
@@ -622,6 +622,8 @@ static int validity_check(char *cmd, int *com_char_count,
 		case SAVE:
 		case QUIT:
 			return TRUE;
+		case CASH:
+		case BONDS:
 		case JUMP: numberonly = 1;
 		case MARGIN:
 		case SELL:
@@ -642,6 +644,11 @@ static int validity_check(char *cmd, int *com_char_count,
 				if((si = find_stock(cmd)) == -1) goto inv_stock;
 				*stock_no = si;
 				*trans_price = stock_array[si].price * *units;
+			} else {
+				/* special case code for stuff where the dispatcher function doesnt validate */
+				switch(*com_no) {
+					case CASH: if(*units > cur_player->bonds) goto insuff_bonds; break;
+				}
 			}
 			return TRUE;
 	}
@@ -652,6 +659,8 @@ static int validity_check(char *cmd, int *com_char_count,
 	return TxWriteMsg(rp, "INVALID STOCK NAME GIVEN");
 	end_qu:
 	return TxWriteMsg(rp, "DATA AVAILABLE AT END OF QUARTER ONLY");
+	insuff_bonds:
+	return TxWriteMsg(rp, "INSUFFICIENT AMOUNT OF BONDS STOCKED");
 }
 
     STUB(change_player)
