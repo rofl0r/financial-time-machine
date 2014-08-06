@@ -434,8 +434,9 @@ static void Delay( long timeout ) {
     STUB(DisplayBeep)
 //void DisplayBeep( struct Screen *screen );
 /* clib/graphics_protos.h */
-    STUB(SetDrMd)
-//void SetDrMd( struct RastPort *rp, unsigned long drawMode );
+static void SetDrMd( struct RastPort *rp, unsigned long drawMode ) {
+	rp->DrawMode = drawMode;
+}
 static void Moveit( struct RastPort *rp, long x, long y, const char*fn, int line ) {
 #ifdef DEBUG_CALLS
 	dprintf(2, "%s called from %s:%d\n", __FUNCTION__, fn, line);
@@ -498,7 +499,8 @@ long Text( struct RastPort *rp, STRPTR string, unsigned long count ) {
 	snprintf(buf, sizeof buf, "%*s", (int) count, string);
 	unsigned rl = get_font_render_length(buf);
 	assert(rp->custom.x+rl<=SCREENW);
-	ezsdl_fill_rect(SU(rp->custom.x), SU(rp->custom.y), rl, FONT_H, GetPenColor(rp, GetBPen(rp)), SCALE);
+	if(rp->DrawMode == JAM2)
+		ezsdl_fill_rect(SU(rp->custom.x), SU(rp->custom.y), rl, FONT_H, GetPenColor(rp, GetBPen(rp)), SCALE);
 	struct spritesheet *font = GetPenColor(rp, GetAPen(rp)) == RGB(0,0,0) ? &ss_black_font : &ss_font;
 	draw_font(buf, font, rp->custom.x, rp->custom.y);
 	rp->custom.x+=rl;
@@ -3079,6 +3081,7 @@ int main() {
 	SetRGB4(rp,5,0,0,15);
 
 	SetAPen(rp, 1);
+	SetDrMd(rp, JAM2);
 
 /* puts us in 40x25 color text mode */
 
