@@ -706,7 +706,7 @@ static int gethundredths() {
 //  ULONG Seconds, Micros;
 //  CurrentTime(&Seconds,&Micros);
 //  return((int)Micros/10000);
-	return getutime64() / 10000;
+	return (getutime64()%1000000)/10000;
 }
 
 #if 1
