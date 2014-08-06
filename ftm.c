@@ -611,6 +611,7 @@ static int validity_check(char *cmd, int *com_char_count,
 		case SAVE:
 		case QUIT:
 			return TRUE;
+		case MARGIN:
 		case SELL:
 		case BUY:
 			if(end) goto incompl;
