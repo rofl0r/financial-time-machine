@@ -3133,7 +3133,7 @@ int main() {
 
 	while((year != 1985) && (year != 6)) {
 		// reduce CPU usage
-		ezsdl_sleep(20);
+		ezsdl_sleep(1);
 
 		if(((ic = kbhit()) != 0) || ((q_break == TRUE) && (jump_weeks > 0) && (make_call == FALSE))) {
 
