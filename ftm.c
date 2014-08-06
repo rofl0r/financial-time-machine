@@ -17,6 +17,7 @@
 
 #define SCALE 2
 #define SU(x) ((x)*SCALE)
+#define ARRAY_SIZE(X) (sizeof(X)/sizeof(X[0]))
 
 #define cursor(X,Y) cursorit(X,Y,__FUNCTION__, __LINE__)
 #define Move(X,Y,Z) Moveit(X,Y,Z,__FUNCTION__, __LINE__)
@@ -47,7 +48,7 @@
 #define BREAK '\t'
 #define BEEP '\07'
 #define ERASE_CH "'\08' '\08'"
-#define NO_OF_STOCKS 31
+
 #define AUTOBUY 20
 #define AUTOSELL 21
 #define NON_AUTO 1
@@ -126,8 +127,7 @@ typedef struct {
 	char splits[20];
 } HISTORY;
 
-static HISTORY history[NO_OF_STOCKS];
-static ASTOCK stock_array[NO_OF_STOCKS] = {
+static ASTOCK stock_array[] = {
 	[ 0] = {.price = 100, .name = "KM", .b1 = 1.4, .b2 = .8, .b3 = 0, .e = .2},
 	[ 1] = {.price = 100, .name = "GE", .b1 = 1.3, .b2 = .4, .b3 = -.2, .e = .3},
 	[ 2] = {.price = 100, .name = "AMR", .b1 = 2.1, .b2 = .9, .b3 = .2, .e = .5},
@@ -160,6 +160,9 @@ static ASTOCK stock_array[NO_OF_STOCKS] = {
 	[29] = {.price = 100, .name = "IBM", .b1 = .9, .b2 = .3, .b3 = 1.2, .e = .6},
 	[30] = {.price = 100, .name = "IMF", .b1 = .0, .b2 = .0, .b3 = 0, .e = .0},
 };
+
+#define NO_OF_STOCKS ARRAY_SIZE(stock_array)
+static HISTORY history[NO_OF_STOCKS];
 
 static char alpha[] =
     { 16, 12, 2, 28, 14, 15, 11, 1, 26, 5, 22, 29, 8, 0, 13, 18, 9, 20, 4, 24, 10, 17, 25, 23, 6, 19, 21, 7, 27, 3, 30 };
@@ -526,8 +529,6 @@ static void clear_bottom(void) {
 static void load_tick_element(TICK_ITEM* t, int i) {
 	int a = 0;
 }
-#define ARRAY_SIZE(X) (sizeof(X)/sizeof(X[0]))
-
 static size_t word(char* s, int*end) {
 	size_t c = 0;
 	while(s[c] && !isspace(s[c])) c++;
