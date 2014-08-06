@@ -114,6 +114,11 @@ struct GelsInfo
    APTR firstBlissObj,lastBlissObj;    /* system use only */
 };
 
+struct RastPort_custom {
+	int x, y;
+	unsigned pencolors[6];
+};
+
 struct RastPort
 {
     //struct  Layer *Layer;
@@ -151,6 +156,7 @@ struct RastPort
     UWORD   wordreserved[7];  /* used to be a node */
     UBYTE   reserved[8];      /* for future use */
 #endif
+	struct RastPort_custom custom;
 };
 
 #define CUSTOMSCREEN       0x000F

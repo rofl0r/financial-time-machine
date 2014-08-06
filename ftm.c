@@ -4,7 +4,10 @@
 #include <math.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <assert.h>
+#include <stdarg.h>
 #include "amiga.h"
+#include "../ezsdl/ezsdl.h"
 
 #ifdef DEBUG
 #define DPRINTF(...) dprintf(2, __VA_ARGS__)
@@ -12,7 +15,12 @@
 #define DPRINTF(...) do { } while(0)
 #endif
 
-#define cursor cursorit
+#define SCALE 2
+#define SU(x) ((x)*SCALE)
+
+#define cursor(X,Y) cursorit(X,Y,__FUNCTION__, __LINE__)
+#define Move(X,Y,Z) Moveit(X,Y,Z,__FUNCTION__, __LINE__)
+
 #define vmode vmodeitt
 #define getkb getkbitt
 
@@ -41,20 +49,6 @@
 #define ERASE_CH "'\08' '\08'"
 #define NO_OF_COMMANDS 14
 #define NO_OF_STOCKS 31
-#define JUMP 13
-#define LIMIT 12
-#define EXERCISE 11
-#define GRAPH 10
-#define CASH 9
-#define SAVE 8
-#define BONDS 7
-#define MARGIN 6
-#define QUIT 5
-#define DELETE 4
-#define PUT 3
-#define CALL 2
-#define SELL 1
-#define BUY 0
 #define AUTOBUY 20
 #define AUTOSELL 21
 #define NON_AUTO 1
@@ -84,6 +78,40 @@
 
 
 #define F10 -80		 /** for JUMPing.  Added 11/22/85 **/
+
+#define SCREENH 240
+#define SCREENW 320
+
+static bmp4*bmp_font, *bmp_black_font;
+static struct spritesheet ss_font, ss_black_font;
+
+#define BOTTOM_START SCREENH/2
+#define FONT "topaz.raw"
+#define FONT_W 8
+#define FONT_H 8
+static void init_gfx() {
+	bmp_font = bmp4_from_file(FONT);
+	bmp_black_font = bmp4_from_file(FONT);
+	unsigned x;
+	for(x=0;x<bmp_black_font->width * bmp_black_font->height;x++)
+		bmp_black_font->data[x] = bmp_black_font->data[x] == RGB(0,0,0) ? RGB(255,255,255) : RGB(0,0,0);
+	if(!spritesheet_init(&ss_font, bmp_font, FONT_W, FONT_H)) dprintf(2, "oops\n");
+	if(!spritesheet_init(&ss_black_font, bmp_black_font, FONT_W, FONT_H)) dprintf(2, "oops\n");
+}
+
+static int get_font_width(char letter) {
+	return ss_font.sprite_w;
+}
+
+static unsigned get_font_render_length(const char* text) {
+	unsigned x=0;
+	for(;*text && *text != '\n';x+=get_font_width(*(text++)));
+	return x;
+}
+
+static void draw_font(const char* text, struct spritesheet *font, unsigned x, unsigned y) {
+	for(;*text;x+=get_font_width(*(text++))) if(*text != '\n') ezsdl_draw_sprite(font, *text, SU(x), SU(y), SCALE);
+}
 
 typedef struct stock {
 	char name[4];
@@ -180,13 +208,28 @@ typedef struct {
 } SMESSS;
 
 static SMESSS std_mssgs;
-char commands[NO_OF_COMMANDS][9] = {
-	"BUY   ",
-	"SELL  ",
-	"CALL  ",
-	"PUT   ",
+
+#define JUMP 13
+#define LIMIT 12
+#define EXERCISE 11
+#define GRAPH 10
+#define CASH 9
+#define SAVE 8
+#define BONDS 7
+#define MARGIN 6
+#define QUIT 5
+#define DELETE 4
+#define PUT 3
+#define CALL 2
+#define SELL 1
+#define BUY 0
+static const char commands[NO_OF_COMMANDS][9] = {
+	"BUY",
+	"SELL",
+	"CALL",
+	"PUT",
 	"DELETE",
-	"QUIT  ",
+	"QUIT",
 	"MARGIN",
 	"T-BILLS",
 	"KEEP",
@@ -355,7 +398,6 @@ static float vx1, vx2, vx3, vx4;	/* variances for option use */
 //static signed char si[] = {0,49,90,117,127,117,90,49,0,-49,-90,-117,-127,-117,-90,-49};
 
 static struct RastPort *rp;
-static char tempstr[250];
 
 static void save();
 static void quit(void);
@@ -382,38 +424,221 @@ static double calc_netw(int player);
 #define STUB(X) static long X () { dprintf(2, "warning: %s unimplemented\n", __FUNCTION__); return 0;}
 
 /* clib/dos_protos.h */
-STUB(Delay)
-// void Delay( long timeout );
+static void Delay( long timeout ) {
+	ezsdl_refresh();
+	ezsdl_sleep(timeout*10);
+}
 /* clib/intuition_protos.h */
     STUB(DisplayBeep)
 //void DisplayBeep( struct Screen *screen );
 /* clib/graphics_protos.h */
-    STUB(SetBPen)
-//void SetBPen( struct RastPort *rp, unsigned long pen );
     STUB(SetDrMd)
 //void SetDrMd( struct RastPort *rp, unsigned long drawMode );
-    STUB(Move)
-//void Move( struct RastPort *rp, long x, long y );
-    STUB(Draw)
-//void Draw( struct RastPort *rp, long x, long y );
-    STUB(SetAPen)
-//void SetAPen( struct RastPort *rp, unsigned long pen );
-    STUB(RectFill)
-//void RectFill( struct RastPort *rp, long xMin, long yMin, long xMax,
-//        long yMax );
-    STUB(Text)
-//LONG Text( struct RastPort *rp, STRPTR string, unsigned long count );
+static void Moveit( struct RastPort *rp, long x, long y, const char*fn, int line ) {
+#ifdef DEBUG_CALLS
+	dprintf(2, "%s called from %s:%d\n", __FUNCTION__, fn, line);
+#endif
+	assert(x<SCREENW);
+	assert(y<SCREENH);
+	rp->custom.x = x;
+	rp->custom.y = y;
+}
+#define MIN(a,b) ((a)<(b)) ? (a) : (b)
+#define ABS(a) ((a) < 0) ? -(a) : (a)
+
+/* Set the primary drawing pen for lines, fills, and text. */
+static void SetAPen( struct RastPort *rp, unsigned long pen ) {
+	rp->FgPen = pen;
+}
+/* Set the secondary drawing pen for lines, fills, and text. */
+static void SetBPen( struct RastPort *rp, unsigned long pen ) {
+	rp->BgPen = pen;
+}
+static unsigned GetAPen(struct RastPort *rp) {
+	return rp->FgPen;
+}
+static unsigned GetBPen(struct RastPort *rp) {
+	return rp->BgPen;
+}
+static unsigned GetPenColor(struct RastPort *rp, unsigned pen) {
+	assert(pen < sizeof(rp->custom.pencolors) / sizeof (rp->custom.pencolors[0]));
+	return rp->custom.pencolors[pen];
+}
+/* original uses ViewPort instead of RastPort */
+static void SetRGB4( struct RastPort *vp, long index, unsigned long red,  unsigned long green, unsigned long blue ) {
+	assert(index < sizeof(rp->custom.pencolors) / sizeof (rp->custom.pencolors[0]));
+	rp->custom.pencolors[index] = RGB(red*17, green*17, blue*17);
+}
+void RectFill( struct RastPort *rp, long xMin, long yMin, long xMax, long yMax ) {
+	ezsdl_fill_rect(SU(xMin), SU(yMin), xMax - xMin, yMax-yMin, GetPenColor(rp, GetAPen(rp)), SCALE);
+}
+
+// draw a line and move there
+static void Draw( struct RastPort *rp, long x, long y ) {
+	//only implement straight lines
+	assert(x == rp->custom.x || y == rp->custom.y);
+
+	if(y != rp->custom.y)
+		ezsdl_draw_vline(SU(rp->custom.x), SU(MIN(y,rp->custom.y)), ABS(y-rp->custom.y), GetPenColor(rp, GetAPen(rp)), SCALE);
+	else
+		ezsdl_draw_hline(SU(MIN(x,rp->custom.x)), SU(rp->custom.y), ABS(x-rp->custom.x), GetPenColor(rp, GetAPen(rp)), SCALE);
+
+	assert(x<SCREENW);
+	assert(y<SCREENH);
+
+	rp->custom.x = x;
+	rp->custom.y = y;
+	ezsdl_refresh();
+}
+
+long Text( struct RastPort *rp, STRPTR string, unsigned long count ) {
+	char buf[80];
+	snprintf(buf, sizeof buf, "%*s", (int) count, string);
+	unsigned rl = get_font_render_length(buf);
+	assert(rp->custom.x+rl<=SCREENW);
+	ezsdl_fill_rect(SU(rp->custom.x), SU(rp->custom.y), rl, FONT_H, GetPenColor(rp, GetBPen(rp)), SCALE);
+	struct spritesheet *font = GetPenColor(rp, GetAPen(rp)) == RGB(0,0,0) ? &ss_black_font : &ss_font;
+	draw_font(buf, font, rp->custom.x, rp->custom.y);
+	rp->custom.x+=rl;
+	ezsdl_refresh();
+	return 0;
+}
     STUB(calc_taxes)
-    STUB(clear_line)
-    STUB(clear_top)
-    STUB(clear_bottom)
+
+/* supposed to clear either the actual line or the line in which commands can be entered */
+static void clear_line(void) {
+	ezsdl_fill_rect(0, SU(rp->custom.y), SCREENW, FONT_H, RGB(0,0,0), SCALE);
+	rp->custom.x = 0;
+}
+
+static void clear_top(void) {
+	ezsdl_fill_rect(0, 0, SCREENW, BOTTOM_START, RGB(0,0,0), SCALE);
+	ezsdl_refresh();
+}
+static void clear_bottom(void) {
+	ezsdl_fill_rect(0, SU(BOTTOM_START), SCREENW, SCREENH-BOTTOM_START, RGB(0,0,0), SCALE);
+	ezsdl_refresh();
+}
+
     STUB(display_rankings)
     STUB(earnings_display)
     STUB(click)
-    STUB(load_tick_element)
-    STUB(validity_check)
+
+static void load_tick_element(TICK_ITEM* t, int i) {
+	int a = 0;
+}
+#define ARRAY_SIZE(X) (sizeof(X)/sizeof(X[0]))
+
+static size_t word(char* s, int*end) {
+	size_t c = 0;
+	while(s[c] && !isspace(s[c])) c++;
+	*end = s[c] == 0;
+	s[c] = 0;
+	return c;
+}
+static char* skip_whitespace(char *s, int*end) {
+	while(*s && isspace(*s)) s++;
+	*end = !*s;
+	return s;
+}
+
+static int find_stock(char* sym) {
+	unsigned i;
+	for(i=0;i<ARRAY_SIZE(stock_array);i++)
+		if(!strcmp(sym, stock_array[i].name)) return i;
+	return -1;
+}
+
+static void TxWrite(struct RastPort *rp, const char *ch);
+
+static void TxWritef(struct RastPort *rp, const char* fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	char buf[100];
+	vsnprintf(buf, sizeof buf, fmt, ap);
+	va_end(ap);
+	TxWrite(rp, buf);
+}
+
+static int TxWriteNoMove(struct RastPort *rp, const char *s) {
+	int x = rp->custom.x;
+	TxWrite(rp, s);
+	rp->custom.x = x;
+	return FALSE;
+}
+
+static int TxWriteMsg(struct RastPort *rp, const char* fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	char buf[100];
+	vsnprintf(buf, sizeof buf, fmt, ap);
+	va_end(ap);
+	message = TRUE;
+	return TxWriteNoMove(rp, buf);
+}
+
+//validity_check: supposed to check whether a user-entered command can be executed
+// translates the command number
+// prints "INVALID COMMAND WORD" if command is not known
+// prints  "YOU HAVEN'T GOT ENOUGH CASH" if not enough money
+// returns TRUE or FALSE
+// calls clear_line
+static int validity_check(char *cmd, int *com_char_count,
+                          int *com_no, int *units, int *stock_no,
+                          int *trans_price, int *autobuy, int *autosell) {
+	// for weird reasons, the first char is always 0
+	cmd++;
+	clear_line();
+	if(!*com_char_count) return FALSE;
+	*com_char_count = 0;
+	unsigned i,l;
+	int end, si;
+	l = word(cmd, &end);
+
+	assert(NO_OF_COMMANDS == ARRAY_SIZE(commands));
+
+	for(i=0;i<ARRAY_SIZE(commands);i++) if(!strcmp(cmd, commands[i])) goto found;
+	return TxWriteMsg(rp, "INVALID COMMAND WORD");
+	found:
+	*com_no = i;
+	if(!end) {
+		cmd+=l+1;
+		cmd=skip_whitespace(cmd, &end);
+	}
+	switch(*com_no) {
+		case GRAPH:
+			if(!q_break) goto end_qu;
+			if(end) goto incompl;
+			if((si = find_stock(cmd)) == -1) goto inv_stock;
+			*stock_no = si;
+		case QUIT:
+			return TRUE;
+		case SELL:
+		case BUY:
+			if(end) goto incompl;
+			if(isdigit(*cmd)) {
+				l = word(cmd, &end);
+				if(end) goto incompl;
+				*units = atoi(cmd);
+				cmd += l+1;
+				cmd = skip_whitespace(cmd, &end);
+				if(end) goto incompl;
+			} else *units = 1;
+			if((si = find_stock(cmd)) == -1) goto inv_stock;
+			*stock_no = si;
+			*trans_price = stock_array[si].price * *units;
+			return TRUE;
+	}
+	return TxWriteMsg(rp, "UNHANDLED COMMAND GIVEN");
+	incompl:
+	return TxWriteMsg(rp, "INCOMPLETE COMMAND GIVEN");
+	inv_stock:
+	return TxWriteMsg(rp, "INVALID STOCK NAME GIVEN");
+	end_qu:
+	return TxWriteMsg(rp, "DATA AVAILABLE AT END OF QUARTER ONLY");
+}
+
     STUB(change_player)
-    STUB(scrollne)
     STUB(scrollit)
     STUB(add_purchase)
     STUB(del_purchase)
@@ -422,15 +647,27 @@ static double sqr(double x) {
 	return (x * x);
 }
 
-static void TxWrite(struct RastPort *rp, char *ch) {
-	int j;
-	char *c;
+static void TxWrite(struct RastPort *rp, const char *ch) {
+	Text(rp, ch, strlen(ch));
+}
 
-	c = ch;
-	j = 0;
-	while(*c++ != '\0')
-		++j;
-	Text(rp, ch, j);
+/* scroll news */
+static void scrollne(char u) {
+	static char scrollbuf[40+1];
+	if(cur_news_line == -1) memset(scrollbuf, ' ', sizeof scrollbuf-1);
+	scrollbuf[sizeof(scrollbuf)-1] = 0;
+	memmove(scrollbuf, scrollbuf+1, sizeof scrollbuf -1);
+	scrollbuf[sizeof(scrollbuf)-2] = u;
+	unsigned x = rp->custom.x, y = rp->custom.y;
+	SetAPen(rp, 3);
+	RectFill(rp, 0, 32, 320, 55);
+	Move(rp, 0, 32+8);
+	SetBPen(rp, 3);
+	SetAPen(rp, 0);
+	TxWrite(rp, scrollbuf);
+	Move(rp, x, y);
+	SetAPen(rp, 1);
+	SetBPen(rp, 0);
 }
 
 static long long timeval2utime(struct timeval *t) {
@@ -475,8 +712,12 @@ static float myrandom(float stdev) {
 	return (holder);
 }
 
-static void cursor(int x, int y) {
-	Move(rp, x * 8, y * 8 + 6);
+static void cursorit(int y, int x, const char*fn, int line) {
+#ifdef DEBUG_CALLS
+	dprintf(2, "%s called from %s:%d\n", __FUNCTION__, fn, line);
+#endif
+	//Move(rp, x * 8, y * 8 + 6);
+	Move(rp, x*8, y*8);
 }
 
 static float get_float(FILE * infile) {
@@ -552,26 +793,11 @@ float variance(int stockno) {
 }
 
 static int kbhit() {
-#if 0
-	/*
-	   Borrowed from The Greenleaf Functions.  Returns 0 if no key
-	   has been hit. Otherwise it returns the keyboard code
-	 */
-
-	if(1 << W->UserPort->mp_SigBit) {
-		messg = (struct IntuiMessage *) GetMsg(W->UserPort);
-		ReplyMsg(messg);
-		if(messg->Class == RAWKEY)
-			return ((int) messg->Code);
-		else
-			return (NULL);
-	} else
-		return (NULL);
-
-#else
-#warning "need to implement kbhit()!"
-	return 0;
-#endif
+	enum eventtypes e;
+	struct event myevent;
+	e = ezsdl_getevent(&myevent);
+	if(e != EV_KEYDOWN) return 0;
+	else return myevent.which;
 }
 
 static void end_year(void) {
@@ -581,11 +807,9 @@ static void end_year(void) {
 	clear_bottom();
 	scr_status = RANKINGSUP;
 	cursor(8, 13);
-	sprintf(tempstr, "Taxes Assessed");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "Taxes Assessed");
 	cursor(9, 13);
-	sprintf(tempstr, "______________");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "______________");
 
 	for(player = 0; player < no_of_players; ++player) {
 		play_ptr = &players[0] + player;
@@ -604,12 +828,10 @@ static void end_year(void) {
 		play_ptr->taxes += calc_taxes(player);
 
 		cursor(11 + player, 0);
-		sprintf(tempstr, "%20s  $%-10.0f", play_ptr->name, play_ptr->taxes);
-		TxWrite(rp, tempstr);
+		TxWritef(rp, "%20s  $%-10.0f", play_ptr->name, play_ptr->taxes);
 		if(play_ptr->taxes < 0) {
 			cursor(11 + player, 37);
-			sprintf(tempstr, "CR");
-			TxWrite(rp, tempstr);
+			TxWrite(rp, "CR");
 		} else if(play_ptr->taxes <= play_ptr->cash) {
 			play_ptr->cash -= play_ptr->taxes;
 			play_ptr->taxes = 0;
@@ -625,8 +847,7 @@ static void end_year(void) {
 	upd_year();
 	year_over = TRUE;
 	clear_line();
-	sprintf(tempstr, "END OF YEAR");
-	TxWrite(rp, tempstr);
+	TxWriteMsg(rp, "END OF YEAR"); // changed from TxWrite
 }
 
 static void execute(int com_no, int units, int stock_no, int price, int auto_minus, int auto_plus, int player) {
@@ -639,12 +860,8 @@ static void execute(int com_no, int units, int stock_no, int price, int auto_min
 				if(players[player - 1].auto_count < AUTOLIMIT) {
 					add_auto_exec(auto_minus, auto_plus, AUTOBUY, NONE, units, stock_no, player,
 						      NOT_FOUND);
-				}
-
-				else {
-					sprintf(tempstr, "YOU ALREADY HAVE %d AUTO TRANSACTIONS", AUTOLIMIT);
-					TxWrite(rp, tempstr);
-					message = TRUE;
+				} else {
+					TxWriteMsg(rp, "YOU ALREADY HAVE %d AUTO TRANSACTIONS", AUTOLIMIT);
 				}
 
 			} else if(round(((float) units) * ((float) price) * 101.5) <= players[player - 1].cash) {
@@ -671,19 +888,12 @@ static void execute(int com_no, int units, int stock_no, int price, int auto_min
 					upd_stock(stock_no);
 
 				} else {	/* reached limit of holdings */
-
-					sprintf(tempstr, "YOU ALREADY HAVE %d STOCKS", STOCKLIMIT);
-					TxWrite(rp, tempstr);
-					message = TRUE;
+					TxWriteMsg(rp, "YOU ALREADY HAVE %d STOCKS", STOCKLIMIT);
 				}
-
 			}
 			/* end if enough cash */
 			else {	/* too little cash */
-
-				sprintf(tempstr, "YOU HAVEN'T GOT ENOUGH CASH");
-				TxWrite(rp, tempstr);
-				message = TRUE;
+				TxWriteMsg(rp, "YOU HAVEN'T GOT ENOUGH CASH");
 			}
 
 			break;
@@ -691,19 +901,11 @@ static void execute(int com_no, int units, int stock_no, int price, int auto_min
 		case SELL:
 			if(price == NOT_FOUND) {
 				if(players[player - 1].auto_count < AUTOLIMIT) {
-					add_auto_exec(auto_minus, auto_plus, AUTOSELL, NONE, units, stock_no, player,
-						      NOT_FOUND);
+					add_auto_exec(auto_minus, auto_plus, AUTOSELL, NONE, units, stock_no, player, NOT_FOUND);
+				} else {
+					TxWriteMsg(rp, "YOU ALREADY HAVE %d AUTO TRANSACTIONS", AUTOLIMIT);
 				}
-
-				else {
-					sprintf(tempstr, "YOU ALREADY HAVE %d AUTO TRANSACTIONS", AUTOLIMIT);
-					TxWrite(rp, tempstr);
-					message = TRUE;
-				}
-
-			}
-
-			else if((players[player - 1].portfolio[stock_no].shares >= units) && (units > 0)) {
+			} else if((players[player - 1].portfolio[stock_no].shares >= units) && (units > 0)) {
 
 				/* pay the player for the stock he sold, first deducting */
 				/* any margin debt owed on those shares.                 */
@@ -740,22 +942,13 @@ static void execute(int com_no, int units, int stock_no, int price, int auto_min
 
 				upd_coh();
 				upd_stock(stock_no);
+			} else {	/* if he doesn't have that many shares */
+				if(players[player - 1].portfolio[stock_no].shares == 0)
+					TxWriteMsg(rp, "YOU DON'T OWN ANY!");
+				else
+					TxWriteMsg(rp, "YOU DON'T HAVE THAT MANY SHARES");
 			}
-
-			else {	/* if he doesn't have that many shares */
-
-				if(players[player - 1].portfolio[stock_no].shares == 0) {
-					sprintf(tempstr, "YOU DON'T OWN ANY!");
-					TxWrite(rp, tempstr);
-				} else {
-					sprintf(tempstr, "YOU DON'T HAVE THAT MANY SHARES");
-					TxWrite(rp, tempstr);
-				}
-				message = TRUE;
-			}
-
 			break;
-
 		case CALL:
 			if(round(((float) price) * ((float) units) * 1.015) <= players[player - 1].cash) {
 				if(players[player - 1].auto_count < AUTOLIMIT) {
@@ -766,18 +959,12 @@ static void execute(int com_no, int units, int stock_no, int price, int auto_min
 					upd_netw();
 
 				} else {
-					sprintf(tempstr, "YOU ALREADY HAVE  %d AUTO TRANSACTIONS", AUTOLIMIT);
-					TxWrite(rp, tempstr);
-					message = TRUE;
+					TxWriteMsg(rp, "YOU ALREADY HAVE  %d AUTO TRANSACTIONS", AUTOLIMIT);
 				}
 			} else {	/* if he hasn't got the money */
-
-				sprintf(tempstr, "YOU NEED SOME MORE CASH");
-				TxWrite(rp, tempstr);
-				message = TRUE;
+				TxWriteMsg(rp, "YOU NEED SOME MORE CASH");
 			}
 			break;
-
 		case PUT:
 			if(round(((float) price) * ((float) units) * 1.015) <= players[player - 1].cash) {
 				if(players[player - 1].auto_count < AUTOLIMIT) {
@@ -788,15 +975,10 @@ static void execute(int com_no, int units, int stock_no, int price, int auto_min
 					upd_netw();
 
 				} else {
-					sprintf(tempstr, "YOU ALREADY HAVE  %d AUTO TRANSACTIONS", AUTOLIMIT);
-					TxWrite(rp, tempstr);
-					message = TRUE;
+					TxWriteMsg(rp, "YOU ALREADY HAVE  %d AUTO TRANSACTIONS", AUTOLIMIT);
 				}
 			} else {	/* if he hasn't got the money */
-
-				sprintf(tempstr, "YOU NEED SOME MORE CASH");
-				TxWrite(rp, tempstr);
-				message = TRUE;
+				TxWriteMsg(rp, "YOU NEED SOME MORE CASH");
 			}
 			break;
 
@@ -832,19 +1014,13 @@ static void execute(int com_no, int units, int stock_no, int price, int auto_min
 					upd_stock(stock_no);
 
 				} else {	/* reached limit of holdings */
-
-					sprintf(tempstr, "YOU ALREADY HAVE %d STOCKS", STOCKLIMIT);
-					TxWrite(rp, tempstr);
-					message = TRUE;
+					TxWriteMsg(rp, "YOU ALREADY HAVE %d STOCKS", STOCKLIMIT);
 				}
 
 			}
 			/* end if enough cash */
 			else {	/* too little cash */
-
-				sprintf(tempstr, "YOU HAVEN'T GOT ENOUGH CASH");
-				TxWrite(rp, tempstr);
-				message = TRUE;
+				TxWriteMsg(rp, "YOU HAVEN'T GOT ENOUGH CASH");
 			}
 
 			break;
@@ -887,9 +1063,7 @@ static void execute(int com_no, int units, int stock_no, int price, int auto_min
 				del_auto(units - 1, player);
 				upd_coh();
 			} else {
-				message = TRUE;
-				sprintf(tempstr, "You Can't Exercise a Limit Order");
-				TxWrite(rp, tempstr);
+				TxWriteMsg(rp, "You Can't Exercise a Limit Order");
 			}
 			break;
 
@@ -899,11 +1073,9 @@ static void execute(int com_no, int units, int stock_no, int price, int auto_min
 				if((scr_status == STOCKSUP) && (scr_ptr[counter]->stock_no == stock_no)) {
 					cursor(12 + counter, 36);
 					if(units != 0) {
-						sprintf(tempstr, "%3d", units);
-						TxWrite(rp, tempstr);
+						TxWritef(rp, "%3d", units);
 					} else {
-						sprintf(tempstr, "   ");
-						TxWrite(rp, tempstr);
+						TxWrite(rp, "   ");
 					}
 				}
 			break;
@@ -921,15 +1093,8 @@ static void execute(int com_no, int units, int stock_no, int price, int auto_min
 static void shutdown() {
 	Delay(300);
 	clear_line();
-	sprintf(tempstr, "Hit any key to continue");
-	TxWrite(rp, tempstr);
-	while(kbhit() == 0) ;
-//  FreeMem(ioa->ioa_Data,sizeof(si));
-//  CloseDevice(ioa);
-//  DeletePort(ioa->ioa_Request.io_Message.mn_ReplyPort);
-//  FreeMem(ioa,sizeof(*ioa));
-//  CloseWindow(W);
-//  CloseScreen(S);
+	TxWrite(rp, "Hit any key to continue");
+	while(kbhit() == 0) ezsdl_sleep(20);
 	exit(TRUE);
 }
 
@@ -955,12 +1120,9 @@ static void quit(void) {
 	}
 	display_rankings();
 	clear_line();
-	sprintf(tempstr, "All Holdings Liquidated");
-	TxWrite(rp, tempstr);
-	sprintf(tempstr, " That's It!");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "All Holdings Liquidated");
+	TxWrite(rp, " That's It!");
 	shutdown();
-
 }
 
 static void set_graph() {
@@ -986,20 +1148,15 @@ static void set_graph() {
 	SetAPen(rp, 1);
 	SetBPen(rp, 0);
 	cursor(2, 10);
-	sprintf(tempstr, "200-");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "200-");
 	cursor(7, 10);
-	sprintf(tempstr, "150-");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "150-");
 	cursor(12, 10);
-	sprintf(tempstr, "100-");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "100-");
 	cursor(17, 11);
-	sprintf(tempstr, "50-");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "50-");
 	cursor(21, 11);
-	sprintf(tempstr, "10-");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "10-");
 }
 
 
@@ -1086,9 +1243,7 @@ static void graph(int stockno, int year) {
 			cursor((int)
 			       (round((((double) 21.51) - (((double) history[MMMS].price[x])) / ((double) 10.0)))),
 			       15 + x);
-
-			sprintf(tempstr, "*");
-			TxWrite(rp, tempstr);
+			TxWrite(rp, "*");
 		}
 		SetDrMd(rp, JAM2);
 		if(tcolor != NOT_FOUND) {
@@ -1104,25 +1259,19 @@ static void graph(int stockno, int year) {
 			color = RED;
 		if((x % 4) == 0) {
 			cursor(23, 15 + x);
-			if(year > 1900) {
-				sprintf(tempstr, "%2d", year - 1900);
-				TxWrite(rp, tempstr);
-			} else {
-				sprintf(tempstr, "%2d", year);
-				TxWrite(rp, tempstr);
-			}
+			if(year > 1900)
+				TxWritef(rp, "%2d", year - 1900);
+			else
+				TxWritef(rp, "%2d", year);
 			++year;
 		}
 	}
 	cursor(2, 32);
-	sprintf(tempstr, "%s", stock_array[stockno].name);
-	TxWrite(rp, tempstr);
+	TxWrite(rp, stock_array[stockno].name);
 	cursor(1, 1);
-	sprintf(tempstr, "Stock");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "Stock");
 	cursor(3, 1);
-	sprintf(tempstr, "Splits");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "Splits");
 	scr_status = GRAPHUP;
 }
 
@@ -1198,10 +1347,9 @@ static void margin() {
 
 	if(found || passby) {
 		clear_line();
-		message = TRUE;
+		message = TRUE; // can probably be removed
 		if(passby && !found) {
-			sprintf(tempstr, "MARGIN CALL ISSUED");
-			TxWrite(rp, tempstr);
+			TxWriteMsg(rp, "MARGIN CALL ISSUED");
 		} else if(stop) {
 			int x = 0;
 			if(found == OPTIONS) {
@@ -1211,8 +1359,7 @@ static void margin() {
 					if(owes[player]) {
 						cursor(11 + x, 4);
 						++x;
-						sprintf(tempstr, "Player %d Must Settle Margin Debts", player + 1);
-						TxWrite(rp, tempstr);
+						TxWriteMsg(rp, "Player %d Must Settle Margin Debts", player + 1);
 					}
 				}
 			} else {
@@ -1222,8 +1369,7 @@ static void margin() {
 					if(owes[4 + player]) {
 						cursor(11 + x, 5);
 						++x;
-						sprintf(tempstr, "Player %d Must Settle Tax Debts", player + 1);
-						TxWrite(rp, tempstr);
+						TxWriteMsg(rp, "Player %d Must Settle Tax Debts", player + 1);
 					}
 				}
 			}
@@ -1253,8 +1399,7 @@ static void margin() {
 					}
 					display_rankings();
 					clear_line();
-					sprintf(tempstr, "%s IS BANKRUPT", ptr->name);
-					TxWrite(rp, tempstr);
+					TxWriteMsg(rp, "%s IS BANKRUPT", ptr->name);
 				}
 			}	/* end going through players */
 		}
@@ -1307,10 +1452,8 @@ static void end_quarter() {
 	if(quarter == 5)
 		quarter = 1;
 	upd_quarter();
-	message = TRUE;
 	clear_line();
-	sprintf(tempstr, "END OF QUARTER");
-	TxWrite(rp, tempstr);
+	TxWriteMsg(rp, "END OF QUARTER");
 	factor1 = sqr(0.2 * q_int_rate);
 	factor2 = sqr(0.02 * q_int_rate);
 	factor3 = sqr(0.04 * q_int_rate);
@@ -1326,8 +1469,7 @@ static void getsave() {
 	saved = fopen("save", "r");
 	if(saved == NULL) {
 		cursor(24, 0);
-		sprintf(tempstr, "NO SAVED GAME FOUND");
-		TxWrite(rp, tempstr);
+		TxWrite(rp, "NO SAVED GAME FOUND");
 		exit(1);
 	} else {
 		clear_top();
@@ -1420,8 +1562,7 @@ static void headers2() {
 	clear_top();
 	clear_bottom();
 	cursor(10, 6);
-	sprintf(tempstr, "How Many Will Be Playing?");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "How Many Will Be Playing?");
 	re:
 	c = kbhit();
 	no_of_players = c;
@@ -1436,14 +1577,11 @@ static void headers2() {
 		clear_top();
 		clear_bottom();
 		cursor(10, 9);
-		sprintf(tempstr, "Enter Player %d's Name", junk1_counter + 1);
-		TxWrite(rp, tempstr);
+		TxWritef(rp, "Enter Player %d's Name", junk1_counter + 1);
 		cursor(12, 6);
-		sprintf(tempstr, "(Maximum Of 20 Characters)");
-		TxWrite(rp, tempstr);
+		TxWrite(rp, "(Maximum Of 20 Characters)");
 		cursor(14, 6);
-		sprintf(tempstr, "> ");
-		TxWrite(rp, tempstr);
+		TxWrite(rp, "> ");
 		junk3_counter = -1;
 		while(junk3_counter < 20) {
 			char c;
@@ -1458,8 +1596,7 @@ static void headers2() {
 					--junk3_counter;
 				} else {
 					players[junk1_counter].name[junk3_counter] = c;
-					sprintf(tempstr, "%c", c);
-					TxWrite(rp, tempstr);
+					TxWritef(rp, "%c", c);
 				}
 			} else if(c == (char) CR) {
 				players[junk1_counter].name[++junk3_counter] = '\0';
@@ -1493,25 +1630,20 @@ static void headers2() {
 		clear_top();
 		clear_bottom();
 		cursor(10, 5);
-		sprintf(tempstr, "How Much Money Would You Like?");
-		TxWrite(rp, tempstr);
+		TxWrite(rp, "How Much Money Would You Like?");
 		cursor(11, 13);
-		sprintf(tempstr, "(In Thousands)");
-		TxWrite(rp, tempstr);
+		TxWrite(rp, "(In Thousands)");
 		cursor(13, 10);
-		sprintf(tempstr, "Enter 25, 50, or 100");
-		TxWrite(rp, tempstr);
+		TxWrite(rp, "Enter 25, 50, or 100");
 		cursor(15, 18);
-		sprintf(tempstr, "> ");
-		TxWrite(rp, tempstr);
+		TxWrite(rp, "> ");
 		c = ' ';
 		while(c != CR) {
 			c = kbhit();
 			if((isdigit(c)) && (junk2_counter < 3)) {
 				inmoney[junk2_counter++] = c;
 				inmoney[junk2_counter] = '\0';
-				sprintf(tempstr, "%c", c);
-				TxWrite(rp, tempstr);
+				TxWritef(rp, "%c", c);
 			} else if((c == BACKSP) && (junk2_counter != 0)) {
 				inmoney[junk2_counter--] = '\0';
 				cursor(15, 20 + junk2_counter);
@@ -1666,10 +1798,8 @@ static void event(int stockno, float news) {
 			history[stockno].splits[quarter + 15] = 1;
 			stock_array[stockno].price /= 2;
 			clear_line();
-			sprintf(tempstr, "%s STOCK SPLITS 2 FOR 1", stock_array[stockno].name);
-			TxWrite(rp, tempstr);
+			TxWriteMsg(rp, "%s STOCK SPLITS 2 FOR 1", stock_array[stockno].name);
 			cursor(24, 0);
-			message = TRUE;
 			for(y = 0; y < no_of_players; ++y) {
 				newshares = (int) players[y].portfolio[stockno].shares;
 
@@ -1771,10 +1901,8 @@ static void save() {
 
 	saveto = fopen("save", "w");
 	if(saveto == NULL) {
-		message = TRUE;
 		clear_line();
-		sprintf(tempstr, "FAILED ATTEMPT TO SAVE");
-		TxWrite(rp, tempstr);
+		TxWriteMsg(rp, "FAILED ATTEMPT TO SAVE");
 	} else {
 		fprintf(saveto, " %d %d %d %d ", no_of_players, year, quarter, week);
 		if(year < 10)
@@ -1832,14 +1960,11 @@ static void save() {
 		temp = fclose(saveto);
 	jump1:
 		if(temp == -1) {
-			message = TRUE;
 			clear_line();
-			sprintf(tempstr, "FAILED ATTEMPT TO SAVE");
-			TxWrite(rp, tempstr);
+			TxWriteMsg(rp, "FAILED ATTEMPT TO SAVE");
 		} else {
 			clear_line();
-			sprintf(tempstr, "GAME OVER");
-			TxWrite(rp, tempstr);
+			TxWriteMsg(rp, "GAME OVER");
 			shutdown();
 		}
 	}
@@ -1899,10 +2024,8 @@ static float option(int com_no, int stockno, int ex_price) {
 
 static void bonds(int units) {
 	if(units + ((int) players[player - 1].bonds) > 99) {
-		message = TRUE;
 		clear_line();
-		sprintf(tempstr, "Maximum of 99 bonds can be held");
-		TxWrite(rp, tempstr);
+		TxWriteMsg(rp, "Maximum of 99 bonds can be held");
 	} else if((((float) units) * 1000.0) <= players[player - 1].cash) {
 		players[player - 1].cash -= (((float) units) * 1000.0);
 		upd_coh();
@@ -1910,10 +2033,8 @@ static void bonds(int units) {
 		if(scr_status != RANKINGSUP)
 			upd_bonds();
 	} else {
-		message = TRUE;
 		clear_line();
-		sprintf(tempstr, "INSUFFICIENT FUNDS");
-		TxWrite(rp, tempstr);
+		TxWriteMsg(rp, "INSUFFICIENT FUNDS");
 	}
 }
 
@@ -1993,28 +2114,22 @@ static int headers1(void) {
 	char c;
 
 	cursor(7, 7);
-	sprintf(tempstr, "The Financial Time Machine");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "The Financial Time Machine");
 	cursor(9, 0);
-	sprintf(tempstr, "(C) 1985 by Lehner Communications, Inc.");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "(C) 1985 by Lehner Communications, Inc.");
 	cursor(14, 11);
-	sprintf(tempstr, "programmed by NMc");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "programmed by NMc");
 	cursor(16, 6);
-	sprintf(tempstr, "special thanks to Ed Friedman");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "special thanks to Ed Friedman");
 	Delay(300);
 	yorn = (int) ' ';
 	while((yorn != (int) 'y') && (yorn != (int) 'Y') && (yorn != (int) 'n') && (yorn != (int) 'N')) {
 		clear_top();
 		clear_bottom();
 		cursor(10, 7);
-		sprintf(tempstr, "Continue A Previous Game?");
-		TxWrite(rp, tempstr);
+		TxWrite(rp, "Continue A Previous Game?");
 		cursor(12, 13);
-		sprintf(tempstr, "(Type Y or N)");
-		TxWrite(rp, tempstr);
+		TxWrite(rp, "(Type Y or N)");
 		cursor(10, 33);
 	re2:
 		yorn = kbhit();
@@ -2026,11 +2141,9 @@ static int headers1(void) {
 			clear_top();
 			clear_bottom();
 			cursor(10, 0);
-			sprintf(tempstr, "Enter Historical Mode or Forecast Mode?");
-			TxWrite(rp, tempstr);
+			TxWrite(rp, "Enter Historical Mode or Forecast Mode?");
 			cursor(12, 13);
-			sprintf(tempstr, "(Type H or F)");
-			TxWrite(rp, tempstr);
+			TxWrite(rp, "(Type H or F)");
 			while((forh != (int) 'F') && (forh != (int) 'f') && (forh != (int) 'H') && (forh != (int) 'h')) {
 				cursor(24, 0);
 				forh = kbhit();
@@ -2042,20 +2155,15 @@ static int headers1(void) {
 				clear_top();
 				clear_bottom();
 				cursor(6, 7);
-				sprintf(tempstr, "Forecast Mode Emphasis On:");
-				TxWrite(rp, tempstr);
+				TxWrite(rp, "Forecast Mode Emphasis On:");
 				cursor(10, 10);
-				sprintf(tempstr, "1) GNP Factors");
-				TxWrite(rp, tempstr);
+				TxWrite(rp, "1) GNP Factors");
 				cursor(12, 10);
-				sprintf(tempstr, "2) Political Factors");
-				TxWrite(rp, tempstr);
+				TxWrite(rp, "2) Political Factors");
 				cursor(14, 10);
-				sprintf(tempstr, "3) Interest Rate Factors");
-				TxWrite(rp, tempstr);
+				TxWrite(rp, "3) Interest Rate Factors");
 				cursor(18, 12);
-				sprintf(tempstr, "Type 1, 2, or 3");
-				TxWrite(rp, tempstr);
+				TxWrite(rp, "Type 1, 2, or 3");
 				while((emphasis < '1') || (emphasis > '3')) {
 					cursor(24, 0);
 					emphasis = kbhit();
@@ -2079,21 +2187,17 @@ static int headers1(void) {
 					clear_top();
 					clear_bottom();
 					cursor(10, 10);
-					sprintf(tempstr, "Enter The Game Year ");
-					TxWrite(rp, tempstr);
+					TxWrite(rp, "Enter The Game Year ");
 					cursor(12, 13);
-					sprintf(tempstr, "(1930 to 1980)");
-					TxWrite(rp, tempstr);
+					TxWrite(rp, "(1930 to 1980)");
 					cursor(14, 17);
-					sprintf(tempstr, "> ");
-					TxWrite(rp, tempstr);
+					TxWrite(rp, "> ");
 					stall = 0;
 					while(stall < 5) {
 						c = kbhit();
 						if((isdigit(c)) && (stall < 4)) {
 							file_name[stall++] = c;
-							sprintf(tempstr, "%c", c);
-							TxWrite(rp, tempstr);
+							TxWritef(rp, "%c", c);
 						}
 						if((c == BACKSP) && (stall != 0)) {
 							--stall;
@@ -2119,28 +2223,19 @@ static int headers1(void) {
 	return (FALSE);
 }
 
-/* unused - maybe was called from one of the missing functions */
+/* unused - maybe was called from one of the missing functions  */
+// it seems this function was called from validity_check
 static int compare(int start, int finish, char *com_array, int method) {
-	int counter;
-	int case_count;
-	int cases;
-	char *cur_case;		/* pointer to the stock or command name array */
-	int possible;		/* the number of possible matches found */
+	int counter, i;
+	const char *cur_case;		/* pointer to the stock or command name array */
+	int possible = 0;		/* the number of possible matches found */
 	int holder;		/* holds the last match found */
+	static const int arr_len[] = {[COMMAND] = NO_OF_COMMANDS, [STOCK] = NO_OF_STOCKS };
 
-	possible = 0;
-	if(method == COMMAND)
-		cases = NO_OF_COMMANDS - 1;
-	else
-		cases = NO_OF_STOCKS - 1;
-	for(case_count = 0; case_count <= cases; ++case_count) {
+	for(i = 0; i < arr_len[method]; ++i) {
+		cur_case = method == COMMAND ? commands[i] : stock_array[i].name;
+
 		counter = start;
-		if(method == COMMAND)
-			cur_case = commands[case_count];
-		else		/* method is STOCK */
-			cur_case = stock_array[case_count].name;
-
-
 		while((counter <= finish) && (com_array[counter] == cur_case[counter - start]) &&
 		      (cur_case[counter - start] != '\0')) {
 			++counter;
@@ -2149,35 +2244,27 @@ static int compare(int start, int finish, char *com_array, int method) {
 		/* if we found an exact match */
 
 		if((cur_case[counter - start] == '\0') && (counter > finish))
-			return (case_count);
+			return i;
 
 		/* if we found a possible match */
 
 		if(counter > finish) {
 			++possible;
-			holder = case_count;
+			holder = i;
 		}
 
 	}
-	if(possible == 1)
-		return (holder);
-	else
-		return (NOT_FOUND);
+	return possible == 1 ? holder : NOT_FOUND;
 }
 
 static void set_top_screen(void) {
 	upd_quarter();
 
 	cursor(0, 27);
-	sprintf(tempstr, "PRIME");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "PRIME");
 	upd_prime();
 
 	upd_year();
-
-/************************************************************************/
-/********** begin assembler setup of screen characteristics *************/
-/************************************************************************/
 
 	SetAPen(rp, 2);
 	RectFill(rp, 0, 8, 320, 31);
@@ -2186,46 +2273,27 @@ static void set_top_screen(void) {
 	RectFill(rp, 0, 32, 320, 55);
 
 	SetAPen(rp, 1);
-
-/************************************************************************/
-/*********** end assembler setup of screen characteristics **************/
-/************************************************************************/
-
 }
 
 
 static void set1_bottom_screen() {
-	int x;
 	cursor(8, 0);
-	sprintf(tempstr, "HOLDINGS");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "HOLDINGS");
 	cursor(8, 34);
-	sprintf(tempstr, "PAGE 1");
-	TxWrite(rp, tempstr);
-	x = (int) ((39 - (int) cur_player->name_length) / 2);
-	cursor(8, x);
-	sprintf(tempstr, "%s", cur_player->name);
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "PAGE 1");
+	cursor(8, (39 - cur_player->name_length)/2);
+	TxWrite(rp, cur_player->name);
 	cursor(10, 1);
-	sprintf(tempstr, " S  LOTS   VALUE   CP    MARGIN  LIMIT");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, " S  LOTS   VALUE   CP    MARGIN  LIMIT");
 	cursor(22, 0);
-	sprintf(tempstr, "COH $");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "COH $");
 	cursor(22, 17);
-	sprintf(tempstr, "NETW $");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "NETW $");
 	cursor(22, 36);
-	sprintf(tempstr, "T-");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "T-");
 	upd_bonds();
 	upd_netw();
 	upd_coh();
-
-
-/************************************************************************/
-/********** begin assembler setup of screen characteristics *************/
-/************************************************************************/
 
 	SetAPen(rp, 5);
 /* Draw appropriate rectangles */
@@ -2268,10 +2336,7 @@ static void set1_bottom_screen() {
 	Draw(rp, 316, 92);
 	SetAPen(rp, 1);
 
-/************************************************************************/
-/*********** end assembler setup of screen characteristics **************/
-/************************************************************************/
-
+	cursor(23, 0);
 }
 
 
@@ -2280,27 +2345,19 @@ static void set2_bottom_screen() {
 	int x;
 
 	cursor(8, 0);
-	sprintf(tempstr, "HOLDINGS");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "HOLDINGS");
 	cursor(8, 34);
-	sprintf(tempstr, "PAGE 2");
-	TxWrite(rp, tempstr);
-	x = (39 - (int) cur_player->name_length) / 2;
-	cursor(8, x);
-	sprintf(tempstr, "%s", cur_player->name);
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "PAGE 2");
+	cursor(8, (39 - cur_player->name_length)/2);
+	TxWrite(rp, cur_player->name);
 	cursor(10, 1);
-	sprintf(tempstr, " S  LOTS   VALUE   OPTION CP  BUY SELL");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, " S  LOTS   VALUE   OPTION CP  BUY SELL");
 	cursor(22, 0);
-	sprintf(tempstr, "COH $");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "COH $");
 	cursor(22, 17);
-	sprintf(tempstr, "NETW $");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "NETW $");
 	cursor(22, 36);
-	sprintf(tempstr, "T-");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "T-");
 	upd_bonds();
 	upd_netw();
 	upd_coh();
@@ -2485,8 +2542,7 @@ finish:
 	*com_char_count = i;
 	cursor(24, 0);
 	for(counter = 1; counter <= i; counter++) {
-		sprintf(tempstr, "%c", com_array[counter]);
-		TxWrite(rp, tempstr);
+		TxWritef(rp, "%c", com_array[counter]);
 	}
 }				/* end procedure up_com_line() */
 
@@ -2536,101 +2592,78 @@ static void write_auto(int position) {
 	stockno = cur_player->auto_ptr[position]->stock_no;
 	cposition = position + 12;
 	cursor(cposition, 1);
-	sprintf(tempstr, "%3s", stock_array[stockno].name);
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%3s", stock_array[stockno].name);
 	cursor(cposition, 5);
-	sprintf(tempstr, "%4d", cur_player->auto_ptr[position]->units);
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%4d", cur_player->auto_ptr[position]->units);
 
 	switch ((int) cur_player->auto_ptr[position]->option_type) {
 		case PUT:
 			cursor(cposition, 20);
-			sprintf(tempstr, "PU");
-			TxWrite(rp, tempstr);
+			TxWrite(rp, "PU");
 			cursor(cposition, 23);
-			sprintf(tempstr, "%3d", cur_player->auto_ptr[position]->option_price);
-			TxWrite(rp, tempstr);
+			TxWritef(rp, "%3d", cur_player->auto_ptr[position]->option_price);
 			cursor(cposition, 10);
-			sprintf(tempstr, "%9.0f", opt_value(player, position));
-			TxWrite(rp, tempstr);
+			TxWritef(rp, "%9.0f", opt_value(player, position));
 			break;
 		case CALL:
 			cursor(cposition, 20);
-			sprintf(tempstr, "CA");
-			TxWrite(rp, tempstr);
+			TxWrite(rp, "CA");
 			cursor(cposition, 23);
-			sprintf(tempstr, "%3d", cur_player->auto_ptr[position]->option_price);
-			TxWrite(rp, tempstr);
+			TxWritef(rp, "%3d", cur_player->auto_ptr[position]->option_price);
 			cursor(cposition, 10);
-			sprintf(tempstr, "%9.0f", opt_value(player, position));
-			TxWrite(rp, tempstr);
+			TxWritef(rp, "%9.0f", opt_value(player, position));
 			break;
 		case AUTOSELL:
 		case AUTOBUY:
 			cursor(cposition, 10);
-			sprintf(tempstr, "LIMIT ORD");
-			TxWrite(rp, tempstr);
+			TxWrite(rp, "LIMIT ORD");
 			break;
 	}
 
 	cursor(cposition, 27);
-	sprintf(tempstr, "%3d", cur_player->auto_ptr[position]->cur_price);
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%3d", cur_player->auto_ptr[position]->cur_price);
 
 	cursor(cposition, 31);
 	if(cur_player->auto_ptr[position]->option_type == AUTOBUY) {
 		if(cur_player->auto_ptr[position]->minus_price != NONE) {
-			sprintf(tempstr, "%3d", cur_player->auto_ptr[position]->minus_price);
-			TxWrite(rp, tempstr);
+			TxWritef(rp, "%3d", cur_player->auto_ptr[position]->minus_price);
 		} else if(cur_player->auto_ptr[position]->plus_price != NONE) {
-			sprintf(tempstr, "%3d", cur_player->auto_ptr[position]->plus_price);
-			TxWrite(rp, tempstr);
+			TxWritef(rp, "%3d", cur_player->auto_ptr[position]->plus_price);
 		}
 	}
 
 	else {
-		sprintf(tempstr, "%3s", " - ");
-		TxWrite(rp, tempstr);
+		TxWritef(rp, "%3s", " - ");
 	}
 
 	cursor(cposition, 36);
 	if(cur_player->auto_ptr[position]->option_type == AUTOSELL) {
 		if(cur_player->auto_ptr[position]->minus_price != NONE) {
-			sprintf(tempstr, "%3d", cur_player->auto_ptr[position]->minus_price);
-			TxWrite(rp, tempstr);
+			TxWritef(rp, "%3d", cur_player->auto_ptr[position]->minus_price);
 		} else if(cur_player->auto_ptr[position]->plus_price != NONE) {
-			sprintf(tempstr, "%3d", cur_player->auto_ptr[position]->plus_price);
-			TxWrite(rp, tempstr);
+			TxWritef(rp, "%3d", cur_player->auto_ptr[position]->plus_price);
 		}
 	} else {
-		sprintf(tempstr, "%3s", " - ");
-		TxWrite(rp, tempstr);
+		TxWritef(rp, "%3s", " - ");
 	}
 }
 
 static void clear_auto(int position) {
 	position += 12;
 	cursor(position, 1);
-	sprintf(tempstr, "   ");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "   ");
 	cursor(position, 5);
-	sprintf(tempstr, "    ");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "    ");
 	cursor(position, 10);
-	sprintf(tempstr, "         ");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "         ");
 	cursor(position, 20);
-	sprintf(tempstr, "      ");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "      ");
 	cursor(position, 27);
-	sprintf(tempstr, "   ");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "   ");
 	cursor(position, 31);
-	sprintf(tempstr, "   ");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "   ");
 	cursor(position, 35);
-	sprintf(tempstr, "    ");
-	TxWrite(rp, tempstr);
+	TxWrite(rp, "    ");
 	cursor(24, com_char_count);
 }
 
@@ -2652,13 +2685,11 @@ static void upd_autos(int stockno) {
 				cur_player->auto_ptr[counter]->cur_price = stock_array[stockno].price;
 				if(scr_status == AUTOSUP) {
 					cursor(12 + counter, 27);
-					sprintf(tempstr, "%3d", stock_array[stockno].price);
-					TxWrite(rp, tempstr);
+					TxWritef(rp, "%3d", stock_array[stockno].price);
 					if((cur_player->auto_ptr[counter]->option_type != AUTOBUY) &&
 					   (cur_player->auto_ptr[counter]->option_type != AUTOSELL)) {
 						cursor(12 + counter, 10);
-						sprintf(tempstr, "%9.0f", opt_value(player, counter));
-						TxWrite(rp, tempstr);
+						TxWritef(rp, "%9.0f", opt_value(player, counter));
 					}
 				}
 			}
@@ -2792,8 +2823,7 @@ static void chk_autos(int stockno) {
 static void upd_coh() {
 	if((scr_status != RANKINGSUP) && (scr_status != GRAPHUP)) {
 		cursor(22, 5);
-		sprintf(tempstr, "%-12.0f", cur_player->cash);
-		TxWrite(rp, tempstr);
+		TxWritef(rp, "%-12.0f", cur_player->cash);
 		cursor(24, 0);
 	}
 }
@@ -2801,8 +2831,7 @@ static void upd_coh() {
 static void upd_netw() {
 	if((scr_status != RANKINGSUP) && (scr_status != GRAPHUP)) {
 		cursor(22, 23);
-		sprintf(tempstr, "%-12.0f", cur_player->net_worth);
-		TxWrite(rp, tempstr);
+		TxWritef(rp, "%-12.0f", cur_player->net_worth);
 		cursor(24, 0);
 	}
 }
@@ -2810,74 +2839,48 @@ static void upd_netw() {
 static void upd_bonds() {
 	if(scr_status != RANKINGSUP) {
 		cursor(22, 38);
-		sprintf(tempstr, "%2d", cur_player->bonds);
-		TxWrite(rp, tempstr);
+		TxWritef(rp, "%2d", cur_player->bonds);
 		cursor(24, 0);
 	}
 }
 
+static const char* getquartername(int q) {
+	assert(q < 5 && q > 0);
+	static const char quarters[4][4] = {"1ST", "2ND", "3RD", "4TH"};
+	return quarters[q-1];
+}
+
 static void upd_quarter() {
-	int junk;
-
+	int q = quarter % 4;
+	if(!q) q = 4;
 	cursor(0, 0);
-
-	junk = (quarter % 4);
-
-	if(junk == 0)
-		junk = 4;
-
-	sprintf(tempstr, "%d", junk);
-	TxWrite(rp, tempstr);
-
-	switch (junk) {
-		case 1:
-			sprintf(tempstr, "ST ");
-			TxWrite(rp, tempstr);
-			break;
-		case 2:
-			sprintf(tempstr, "ND ");
-			TxWrite(rp, tempstr);
-			break;
-		case 3:
-			sprintf(tempstr, "RD ");
-			TxWrite(rp, tempstr);
-			break;
-		case 4:
-			sprintf(tempstr, "TH ");
-			TxWrite(rp, tempstr);
-			break;
-		default:
-			sprintf(tempstr, "ERROR QUARTER IS %d", junk);
-			TxWrite(rp, tempstr);
-			break;
-	}
-
-	sprintf(tempstr, "QUARTER");
-	TxWrite(rp, tempstr);
-
+	SetAPen(rp, 0);
+	RectFill(rp, 0,0,FONT_W*3,FONT_H);
+	SetAPen(rp, 1);
+	TxWrite(rp,getquartername(q));
+	TxWrite(rp, " QUARTER");
 	cursor(24, com_char_count);
 }
 
 static void upd_year() {
 	if(year < 1000) {
 		cursor(0, 17);
-		sprintf(tempstr, "YEAR %d", year);
-		TxWrite(rp, tempstr);
+		TxWritef(rp, "YEAR %d", year);
 	} else {
 		cursor(0, 18);
-		sprintf(tempstr, "%4d", year);
-		TxWrite(rp, tempstr);
+		TxWritef(rp, "%4d", year);
 	}
 	cursor(24, com_char_count);
 }
 
 static void upd_prime() {
 	float x;
-
+	SetAPen(rp, 0);
+	RectFill(rp,SCREENW-5*FONT_W,0,SCREENW,FONT_H);
+	SetAPen(rp, 1);
 	x = prime_rate * 100;
 	cursor(0, 34);
-	sprintf(tempstr, "%5.2f%%", x);
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%5.2f%%", x);
 	cursor(24, com_char_count);
 }
 
@@ -2886,51 +2889,37 @@ static void write_stock(int line_inc, int element) {
 
 	stockno = scr_ptr[element]->stock_no;
 	cursor(12 + line_inc, 1);
-	sprintf(tempstr, "%3s", stock_array[stockno].name);
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%3s", stock_array[stockno].name);
 	cursor(12 + line_inc, 5);
-	sprintf(tempstr, "%4d", scr_ptr[element]->units);
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%4d", scr_ptr[element]->units);
 	cursor(12 + line_inc, 10);
-	sprintf(tempstr, "%9.0f",
-		((float) cur_player->portfolio[stockno].shares) * (stock_array[stockno].price * 100.0));
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%9.0f", ((float) cur_player->portfolio[stockno].shares) * (stock_array[stockno].price * 100.0));
 	cursor(12 + line_inc, 20);
-	sprintf(tempstr, "%3d", scr_ptr[element]->price);
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%3d", scr_ptr[element]->price);
 	cursor(12 + line_inc, 24);
-	sprintf(tempstr, "%9.0f", round((double) cur_player->portfolio[stockno].margin_debt));
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%9.0f", round((double) cur_player->portfolio[stockno].margin_debt));
 	cursor(12 + line_inc, 36);
 	if(cur_player->portfolio[stockno].limit > 0) {
-		sprintf(tempstr, "%3d", cur_player->portfolio[stockno].limit);
-		TxWrite(rp, tempstr);
+		TxWritef(rp, "%3d", cur_player->portfolio[stockno].limit);
 	} else {
-		sprintf(tempstr, "%3s", " ");
-		TxWrite(rp, tempstr);
+		TxWritef(rp, "%3s", " ");
 	}
 }
 
 static void clear_stock(int line_inc) {
 	line_inc += 12;
 	cursor(line_inc, 1);
-	sprintf(tempstr, "%3s", " ");
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%3s", " ");
 	cursor(line_inc, 5);
-	sprintf(tempstr, "%4s", " ");
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%4s", " ");
 	cursor(line_inc, 10);
-	sprintf(tempstr, "%9s", " ");
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%9s", " ");
 	cursor(line_inc, 20);
-	sprintf(tempstr, "%3s", " ");
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%3s", " ");
 	cursor(line_inc, 24);
-	sprintf(tempstr, "%9s", " ");
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%9s", " ");
 	cursor(line_inc, 34);
-	sprintf(tempstr, "%5s", " ");
-	TxWrite(rp, tempstr);
+	TxWritef(rp, "%5s", " ");
 }
 
 
@@ -3061,11 +3050,9 @@ static void upd_stock(int stockno) {
 				scr_ptr[tally]->price = stock_array[stockno].price;
 				cursor(12 + tally, 10);
 				garbage = (float) (scr_ptr[tally]->price) * (float) (scr_ptr[tally]->units) * 100.0;
-				sprintf(tempstr, "%9.0f", garbage);
-				TxWrite(rp, tempstr);
+				TxWritef(rp, "%9.0f", garbage);
 				cursor(12 + tally, 20);
-				sprintf(tempstr, "%3d", scr_ptr[tally]->price);
-				TxWrite(rp, tempstr);
+				TxWritef(rp, "%3d", scr_ptr[tally]->price);
 				cursor(24, com_char_count);
 				goto continue3;
 			}
@@ -3079,8 +3066,7 @@ static void upd_stock(int stockno) {
 			if(scr_ptr[tally]->margin_debt != cur_player->portfolio[stockno].margin_debt) {
 				scr_ptr[tally]->margin_debt = cur_player->portfolio[stockno].margin_debt;
 				cursor(12 + tally, 24);
-				sprintf(tempstr, "%9.0f", round((float) scr_ptr[tally]->margin_debt));
-				TxWrite(rp, tempstr);
+				TxWritef(rp, "%9.0f", round((float) scr_ptr[tally]->margin_debt));
 				cursor(24, com_char_count);
 			}
 	continue3:
@@ -3097,68 +3083,22 @@ int main() {
 	char c;
 	int junk_counter;	/* a throwaway counter variable */
 	int hit;		/* which PLAYER function key was hit */
-#if 0
-	if((S = (struct Screen *) OpenScreen(&NS)) == NULL) {
-		printf("screen failed");
-		exit(FALSE);
-	}
 
-	NW.Screen = S;
-	if((W = (struct Window *) OpenWindow(&NW)) == NULL) {
-		printf("window failed");
-		exit(FALSE);
-	}
+	cur_player = &players[0];           /* set current player as player 1 */
 
-	rp = W->RPort;
-	vp = (struct ViewPort *) ViewPortAddress(W);
+	ezsdl_init(SU(SCREENW), SU(SCREENH));
+	init_gfx();
+	struct RastPort foo = {0};
+	rp = &foo;
 
-// this seems to override the color of the mouse pointer
-	SetRGB4(vp, 0, 0, 0, 0);
-	SetRGB4(vp, 1, 15, 15, 15);
-	SetRGB4(vp, 2, 15, 0, 0);
-	SetRGB4(vp, 3, 15, 15, 0);
-	SetRGB4(vp, 4, 0, 15, 0);
-	SetRGB4(vp, 5, 0, 0, 15);
-#endif
+	SetRGB4(rp,0,0,0,0);
+	SetRGB4(rp,1,15,15,15);
+	SetRGB4(rp,2,15,0,0);
+	SetRGB4(rp,3,15,15,0);
+	SetRGB4(rp,4,0,15,0);
+	SetRGB4(rp,5,0,0,15);
 
-#if 0
-	ioa = (struct IOAudio *) AllocMem(sizeof(*ioa), MEMF_PUBLIC | MEMF_CLEAR);
-	if(ioa == NULL)
-		exit(FALSE);
-	ioa->ioa_Request.io_Message.mn_Node.ln_Pri = 10;
-	if((ioa->ioa_Request.io_Message.mn_ReplyPort = CreatePort("sound", 0)) == NULL) {
-		printf("port failed");
-		exit(FALSE);
-	}
-	ioa->ioa_Data = allocationMap;
-	ioa->ioa_Length = sizeof(allocationMap);
-	if(OpenDevice(AUDIONAME, 0, ioa, 0)) {
-		printf("device failed");
-		exit(FALSE);
-	}
-	ioa->ioa_Request.io_Command = CMD_WRITE;
-	ioa->ioa_Request.io_Flags = ADIOF_PERVOL;
-	ioa->ioa_Data = (BYTE *) AllocMem(sizeof(si), MEMF_CHIP);
-	if(ioa->ioa_Data == NULL) {
-		printf("allocmem failed");
-		exit(FALSE);
-	} else {
-		for(i = 0; i < sizeof(si); ++i)
-			ioa->ioa_Data[i] = si[i];
-	}
-	ioa->ioa_Length = sizeof(si);
-	ioa->ioa_Period = 224;
-	ioa->ioa_Volume = 64;
-	ioa->ioa_Cycles = 20;
-
-
-	com_char_count = 0;	/* no user input */
-	message = FALSE;	/* no message being display ? */
-	cur_player = &players[0];	/* set current player as player 1 */
-	click_on = TRUE;
-	tick_position = 0;
-#endif
-
+	SetAPen(rp, 1);
 
 /* puts us in 40x25 color text mode */
 
@@ -3212,6 +3152,8 @@ int main() {
 
 
 	while((year != 1985) && (year != 6)) {
+		// reduce CPU usage
+		ezsdl_sleep(20);
 
 		if(((ic = kbhit()) != 0) || ((q_break == TRUE) && (jump_weeks > 0) && (make_call == FALSE))) {
 
@@ -3293,22 +3235,22 @@ int main() {
 						cursor(10, 0);
 						for(stock = 0; stock < (NO_OF_STOCKS - 1); stock += 3) {
 							cursor(10 + (int) (stock / 3), 0);
-							sprintf(tempstr, "  %3s - %3d    %3s - %3d    %3s - %3d",
+							TxWritef(rp, "  %3s - %3d    %3s - %3d    %3s - %3d",
 								stock_array[alpha[stock]].name,
 								stock_array[alpha[stock]].price,
 								stock_array[alpha[stock + 1]].name,
 								stock_array[alpha[stock + 1]].price,
 								stock_array[alpha[stock + 2]].name,
 								stock_array[alpha[stock + 2]].price);
-							TxWrite(rp, tempstr);
 						}
 						cursor(21, 15);
+#if 0
 						tempstr[0] = stock_array[MMMS].name[0];
 						tempstr[1] = stock_array[MMMS].name[1];
 						tempstr[2] = stock_array[MMMS].name[2];
 						tempstr[3] = stock_array[MMMS].name[3];
-						sprintf(tempstr, "%3s - %3d", tempstr, stock_array[MMMS].price);
-						TxWrite(rp, tempstr);
+#endif
+						TxWritef(rp, "%3s - %3d", stock_array[MMMS].name, stock_array[MMMS].price);
 						clear_line();
 						scr_status = RANKINGSUP;	/* F9 */
 						com_char_count = 0;
@@ -3383,6 +3325,7 @@ int main() {
 				goto continue1;
 			}
 			if(c == CR) {
+				com_array[1+com_char_count] = 0;
 				if(com_char_count == 0) {
 					timer2.count = 0;
 					timer2.hour_changed = FALSE;
@@ -3403,8 +3346,7 @@ int main() {
 				int x;
 				cursor(24, 0);
 				for(x = 1; x <= com_char_count; ++x) {
-					sprintf(tempstr, " ");
-					TxWrite(rp, tempstr);
+					TxWrite(rp, " ");
 				}
 				cursor(24, 0);
 				com_char_count = 0;
@@ -3425,23 +3367,20 @@ int main() {
 			if(isdigit(c)) {
 				++com_char_count;
 				com_array[com_char_count] = c;
-				sprintf(tempstr, "%c", c);
-				TxWrite(rp, tempstr);
+				TxWritef(rp, "%c", c);
 				goto continue1;
 			}
 			if((isupper(c)) || (c == ' ') || (c == '+') || (c == '-') || (c == '*')) {
 				++com_char_count;
 				com_array[com_char_count] = c;
-				sprintf(tempstr, "%c", c);
-				TxWrite(rp, tempstr);
+				TxWritef(rp, "%c", c);
 				goto continue1;
 			}
 			if(islower(c)) {
 				c = toupper(c);
 				++com_char_count;
 				com_array[com_char_count] = c;
-				sprintf(tempstr, "%c", c);
-				TxWrite(rp, tempstr);
+				TxWritef(rp, "%c", c);
 				goto continue1;
 			}
 			DisplayBeep();
@@ -3532,7 +3471,7 @@ int main() {
 		}
 
 		if((timer3.status == OFF) &&
-		   (!stop) && (!in_progress) && ((newsline[cur_news_line] == '\n') || (cur_news_line == -1))) {
+		   (!stop) && (!in_progress) && ((cur_news_line == -1) || (newsline[cur_news_line] == '\n'))) {
 			timer3.count = time + 8 + ((int) round((double) frand() * 3.0));
 			if(timer3.count >= 3599) {
 				timer3.count -= 3599;
