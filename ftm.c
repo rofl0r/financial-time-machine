@@ -526,9 +526,6 @@ static void clear_bottom(void) {
     STUB(earnings_display)
     STUB(click)
 
-static void load_tick_element(TICK_ITEM* t, int i) {
-	int a = 0;
-}
 static size_t word(char* s, int*end) {
 	size_t c = 0;
 	while(s[c] && !isspace(s[c])) c++;
@@ -638,7 +635,6 @@ static int validity_check(char *cmd, int *com_char_count,
 }
 
     STUB(change_player)
-    STUB(scrollit)
     STUB(add_purchase)
     STUB(del_purchase)
 
@@ -650,23 +646,42 @@ static void TxWrite(struct RastPort *rp, const char *ch) {
 	Text(rp, ch, strlen(ch));
 }
 
+
+/* expecting a scrollbuf of 41 chars */
+static void scroll(char* scrollbuf, char u, int reset, int y, int bgpen) {
+	if(reset) memset(scrollbuf, ' ', sizeof scrollbuf-1);
+	scrollbuf[41-1] = 0;
+	memmove(scrollbuf, scrollbuf+1, 41-1);
+	scrollbuf[41-2] = u;
+	unsigned sx = rp->custom.x, sy = rp->custom.y;
+	SetAPen(rp, bgpen);
+	RectFill(rp, 0, y, 320, y+23);
+	Move(rp, 0, y+8);
+	SetBPen(rp, bgpen);
+	SetAPen(rp, 0);
+	TxWrite(rp, scrollbuf);
+	Move(rp, sx, sy);
+	SetAPen(rp, 1);
+	SetBPen(rp, 0);
+}
+
 /* scroll news */
 static void scrollne(char u) {
 	static char scrollbuf[40+1];
-	if(cur_news_line == -1) memset(scrollbuf, ' ', sizeof scrollbuf-1);
-	scrollbuf[sizeof(scrollbuf)-1] = 0;
-	memmove(scrollbuf, scrollbuf+1, sizeof scrollbuf -1);
-	scrollbuf[sizeof(scrollbuf)-2] = u;
-	unsigned x = rp->custom.x, y = rp->custom.y;
-	SetAPen(rp, 3);
-	RectFill(rp, 0, 32, 320, 55);
-	Move(rp, 0, 32+8);
-	SetBPen(rp, 3);
-	SetAPen(rp, 0);
-	TxWrite(rp, scrollbuf);
-	Move(rp, x, y);
-	SetAPen(rp, 1);
-	SetBPen(rp, 0);
+	scroll(scrollbuf, u, cur_news_line == -1, 32, 3);
+}
+
+static void scrollit(char u) {
+	static char scrollbuf[40+1];
+	static int initdone;
+	scroll(scrollbuf, u, !initdone, 32-24, 2);
+	initdone = 1;
+}
+
+static void load_tick_element(TICK_ITEM* t, int stockno) {
+	int l = snprintf(t->item, sizeof(t->item), "%s-%d   ", stock_array[stockno].name, stock_array[stockno].price);
+	//memset(t->item+l, ' ', sizeof(t->item)-l);
+	//t->item[sizeof(t->item)-1]=0;
 }
 
 static long long timeval2utime(struct timeval *t) {
