@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <stdarg.h>
 #include "amiga.h"
-#include "../ezsdl/ezsdl.h"
+#include "ezsdl.h"
 
 #ifdef DEBUG
 #define DPRINTF(...) dprintf(2, __VA_ARGS__)
