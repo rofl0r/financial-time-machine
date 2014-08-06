@@ -631,11 +631,11 @@ static int validity_check(char *cmd, int *com_char_count,
 			if(end) goto incompl;
 			if(isdigit(*cmd)) {
 				l = word(cmd, &end);
-				if(end && !numberonly) goto incompl;
+				if(end && !numberonly) goto missing_stock;
 				*units = atoi(cmd);
 				cmd += l+1;
 				cmd = skip_whitespace(cmd, &end);
-				if(end && !numberonly) goto incompl;
+				if(end && !numberonly) goto missing_stock;
 			} else {
 				if(numberonly) goto incompl;
 				*units = 1;
@@ -655,6 +655,8 @@ static int validity_check(char *cmd, int *com_char_count,
 	return TxWriteMsg(rp, "UNHANDLED COMMAND GIVEN");
 	incompl:
 	return TxWriteMsg(rp, "INCOMPLETE COMMAND GIVEN");
+	missing_stock:
+	return TxWriteMsg(rp, "NO STOCK NAME GIVEN");
 	inv_stock:
 	return TxWriteMsg(rp, "INVALID STOCK NAME GIVEN");
 	end_qu:
