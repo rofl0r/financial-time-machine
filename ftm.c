@@ -47,7 +47,6 @@
 #define BREAK '\t'
 #define BEEP '\07'
 #define ERASE_CH "'\08' '\08'"
-#define NO_OF_COMMANDS 14
 #define NO_OF_STOCKS 31
 #define AUTOBUY 20
 #define AUTOSELL 21
@@ -223,7 +222,7 @@ static SMESSS std_mssgs;
 #define CALL 2
 #define SELL 1
 #define BUY 0
-static const char commands[NO_OF_COMMANDS][9] = {
+static const char commands[][9] = {
 	"BUY",
 	"SELL",
 	"CALL",
@@ -594,8 +593,6 @@ static int validity_check(char *cmd, int *com_char_count,
 	unsigned i,l;
 	int end, si;
 	l = word(cmd, &end);
-
-	assert(NO_OF_COMMANDS == ARRAY_SIZE(commands));
 
 	for(i=0;i<ARRAY_SIZE(commands);i++) if(!strcmp(cmd, commands[i])) goto found;
 	return TxWriteMsg(rp, "INVALID COMMAND WORD");
@@ -2221,40 +2218,6 @@ static int headers1(void) {
 	}
 
 	return (FALSE);
-}
-
-/* unused - maybe was called from one of the missing functions  */
-// it seems this function was called from validity_check
-static int compare(int start, int finish, char *com_array, int method) {
-	int counter, i;
-	const char *cur_case;		/* pointer to the stock or command name array */
-	int possible = 0;		/* the number of possible matches found */
-	int holder;		/* holds the last match found */
-	static const int arr_len[] = {[COMMAND] = NO_OF_COMMANDS, [STOCK] = NO_OF_STOCKS };
-
-	for(i = 0; i < arr_len[method]; ++i) {
-		cur_case = method == COMMAND ? commands[i] : stock_array[i].name;
-
-		counter = start;
-		while((counter <= finish) && (com_array[counter] == cur_case[counter - start]) &&
-		      (cur_case[counter - start] != '\0')) {
-			++counter;
-		}
-
-		/* if we found an exact match */
-
-		if((cur_case[counter - start] == '\0') && (counter > finish))
-			return i;
-
-		/* if we found a possible match */
-
-		if(counter > finish) {
-			++possible;
-			holder = i;
-		}
-
-	}
-	return possible == 1 ? holder : NOT_FOUND;
 }
 
 static void set_top_screen(void) {
