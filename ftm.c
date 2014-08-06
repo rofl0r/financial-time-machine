@@ -430,9 +430,6 @@ static void Delay( long timeout ) {
 	ezsdl_refresh();
 	ezsdl_sleep(timeout*10);
 }
-/* clib/intuition_protos.h */
-    STUB(DisplayBeep)
-//void DisplayBeep( struct Screen *screen );
 /* clib/graphics_protos.h */
 static void SetDrMd( struct RastPort *rp, unsigned long drawMode ) {
 	rp->DrawMode = drawMode;
@@ -507,6 +504,20 @@ long Text( struct RastPort *rp, STRPTR string, unsigned long count ) {
 	ezsdl_refresh();
 	return 0;
 }
+
+/* clib/intuition_protos.h */
+void DisplayBeep(void) {
+	/* makes the screen flash for an instant */
+	bmp4 *tmp = ezsdl_get_screenshot();
+	ezsdl_fill_rect(0, 0, SCREENW, SCREENH, RGB(255,255,255), SCALE);
+	ezsdl_refresh();
+	ezsdl_sleep(20);
+	ezsdl_draw(tmp, 0, 0, 1);
+	ezsdl_refresh();
+	free(tmp);
+}
+
+
     STUB(calc_taxes)
 
 /* supposed to clear either the actual line or the line in which commands can be entered */
