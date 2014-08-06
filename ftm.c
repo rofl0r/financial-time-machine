@@ -1541,7 +1541,7 @@ static void getsave() {
 				history[counter].splits[junk] = (int) get_int(saved);
 		}
 		fclose(saved);
-		unlink("save");
+		//unlink("save");
 		load_screen();
 		screen_upd();
 		load_tick_element(&ticker[0], 0);
