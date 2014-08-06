@@ -591,7 +591,7 @@ static int validity_check(char *cmd, int *com_char_count,
 	if(!*com_char_count) return FALSE;
 	*com_char_count = 0;
 	unsigned i,l;
-	int end, si;
+	int end, si, numberonly = 0;
 	l = word(cmd, &end);
 
 	for(i=0;i<ARRAY_SIZE(commands);i++) if(!strcmp(cmd, commands[i])) goto found;
@@ -611,21 +611,27 @@ static int validity_check(char *cmd, int *com_char_count,
 		case SAVE:
 		case QUIT:
 			return TRUE;
+		case JUMP: numberonly = 1;
 		case MARGIN:
 		case SELL:
 		case BUY:
 			if(end) goto incompl;
 			if(isdigit(*cmd)) {
 				l = word(cmd, &end);
-				if(end) goto incompl;
+				if(end && !numberonly) goto incompl;
 				*units = atoi(cmd);
 				cmd += l+1;
 				cmd = skip_whitespace(cmd, &end);
-				if(end) goto incompl;
-			} else *units = 1;
-			if((si = find_stock(cmd)) == -1) goto inv_stock;
-			*stock_no = si;
-			*trans_price = stock_array[si].price * *units;
+				if(end && !numberonly) goto incompl;
+			} else {
+				if(numberonly) goto incompl;
+				*units = 1;
+			}
+			if(!numberonly) {
+				if((si = find_stock(cmd)) == -1) goto inv_stock;
+				*stock_no = si;
+				*trans_price = stock_array[si].price * *units;
+			}
 			return TRUE;
 	}
 	return TxWriteMsg(rp, "UNHANDLED COMMAND GIVEN");
