@@ -234,7 +234,7 @@ static const char commands[][9] = {
 	"QUIT",
 	"MARGIN",
 	"T-BILLS",
-	"KEEP",
+	"SAVE",
 	"CASH",
 	"GRAPH",
 	"EXERCISE",
@@ -609,6 +609,7 @@ static int validity_check(char *cmd, int *com_char_count,
 			if(end) goto incompl;
 			if((si = find_stock(cmd)) == -1) goto inv_stock;
 			*stock_no = si;
+		case SAVE:
 		case QUIT:
 			return TRUE;
 		case SELL:
