@@ -535,7 +535,6 @@ static void clear_bottom(void) {
 	ezsdl_refresh();
 }
 
-    STUB(display_rankings)
     STUB(earnings_display)
     STUB(click)
 
@@ -585,6 +584,35 @@ static int TxWriteMsg(struct RastPort *rp, const char* fmt, ...) {
 	va_end(ap);
 	message = TRUE;
 	return TxWriteNoMove(rp, buf);
+}
+
+static void cursorit(int y, int x, const char*fn, int line) {
+#ifdef DEBUG_CALLS
+	dprintf(2, "%s called from %s:%d\n", __FUNCTION__, fn, line);
+#endif
+	//Move(rp, x * 8, y * 8 + 6);
+	Move(rp, x*8, y*8);
+}
+
+static void display_rankings(void) {
+	static const int rankingstarty = 10;
+	int i;
+	clear_bottom();
+	cursor(8, 0);
+	clear_line();
+        cursor(rankingstarty, 0);
+        TxWrite(rp, "               ""NET WORTH""               "" ");
+	cursor(rankingstarty+1,0);
+	TxWrite(rp, "    ----------""----------""----------""--");
+	for(i=0;i<no_of_players;i++) {
+		cursor(rankingstarty+2+i, 4);
+		TxWrite(rp, players[i].name);
+		char buf[16];
+		int l = snprintf(buf, sizeof buf, "%.0f", players[i].net_worth);
+		cursor(rankingstarty+2+i, 40-4-l);
+		TxWrite(rp, buf);
+	}
+	cursor(rankingstarty+14,0);
 }
 
 //validity_check: supposed to check whether a user-entered command can be executed
