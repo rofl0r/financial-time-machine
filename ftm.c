@@ -85,7 +85,7 @@
 static bmp4*bmp_font, *bmp_black_font;
 static struct spritesheet ss_font, ss_black_font;
 
-#define BOTTOM_START SCREENH/2
+#define BOTTOM_START 76
 #define FONT "topaz.raw"
 #define FONT_W 8
 #define FONT_H 8
