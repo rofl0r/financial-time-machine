@@ -164,7 +164,7 @@ static ASTOCK stock_array[] = {
 #define NO_OF_STOCKS ARRAY_SIZE(stock_array)
 static HISTORY history[NO_OF_STOCKS];
 
-static char alpha[] =
+static unsigned char alpha[] =
     { 16, 12, 2, 28, 14, 15, 11, 1, 26, 5, 22, 29, 8, 0, 13, 18, 9, 20, 4, 24, 10, 17, 25, 23, 6, 19, 21, 7, 27, 3, 30 };
 
 typedef struct {
@@ -759,9 +759,7 @@ static void scrollit(char u) {
 }
 
 static void load_tick_element(TICK_ITEM* t, int stockno) {
-	int l = snprintf(t->item, sizeof(t->item), "%s-%d   ", stock_array[stockno].name, stock_array[stockno].price);
-	//memset(t->item+l, ' ', sizeof(t->item)-l);
-	//t->item[sizeof(t->item)-1]=0;
+	snprintf(t->item, sizeof(t->item), "%s-%d   ", stock_array[stockno].name, stock_array[stockno].price);
 }
 
 static long long timeval2utime(struct timeval *t) {
@@ -773,14 +771,6 @@ static long long getutime64(void) {
 	gettimeofday(&t, 0);
 	return timeval2utime(&t);
 }
-
-static int getmicros() {
-//   ULONG Seconds, Micros;
-//   CurrentTime(&Seconds,&Micros);
-//   return((int) (Micros % 100) + 1);
-	return getutime64() % 100 + 1;
-}
-
 
 static int gethundredths() {
 //  ULONG Seconds, Micros;
@@ -1426,7 +1416,7 @@ static void margin() {
 			}
 		}
 
-		if(ptr->taxes > 0)
+		if(ptr->taxes > 0) {
 			if(ptr->cash < ptr->taxes) {
 
 				ptr->taxes -= ptr->cash;
@@ -1439,6 +1429,7 @@ static void margin() {
 				ptr->cash -= ptr->taxes;
 				ptr->taxes = 0;
 			}
+		}
 
 		if(cur_player == ptr) {
 			calc_netw(player + 1);
@@ -2409,7 +2400,6 @@ static void set1_bottom_screen(void) {
 
 
 static void set2_bottom_screen() {
-	int x;
 
 	cursor(8, 0);
 	TxWrite(rp, "HOLDINGS");
@@ -3548,7 +3538,7 @@ int main() {
 			timer3.status = ON;
 
 		} else if((timer3.status == ON) && (time > timer3.count) && (!in_progress) && (!timer3.hour_changed)) {
-			float j, k, l, m;
+			float j, k, l;
 
 			cur_news_line = 0;
 			half_way = -2;
@@ -3556,7 +3546,7 @@ int main() {
 			k = ((float) y_mssg_count - 0.00001);
 			l = j * k;
 			messno = (int) l;
-			DPRINTF("%f %f %f %f %d  %d\n",j,k,l,m,messno,y_mssg_count);
+			DPRINTF("%f %f %f %d  %d\n",j,k,l,m,messno,y_mssg_count);
 
 			if(yrly_mssgs.item[messno].used == FALSE) {
 
