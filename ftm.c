@@ -653,6 +653,7 @@ static int validity_check(char *cmd, int *com_char_count,
 		case CASH:
 		case BONDS:
 		case JUMP: numberonly = 1;
+		case PUT:
 		case MARGIN:
 		case SELL:
 		case BUY:
