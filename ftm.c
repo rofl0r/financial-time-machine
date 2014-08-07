@@ -694,7 +694,27 @@ static int validity_check(char *cmd, int *com_char_count,
 	return TxWriteMsg(rp, "INSUFFICIENT AMOUNT OF BONDS STOCKED");
 }
 
-    STUB(change_player)
+static void set1_bottom_screen(void);
+static void set2_bottom_screen(void);
+static void write_auto(int position);
+static void auto_display(void);
+static void screen_upd(void);
+
+static void change_player(int playerno) {
+	assert(playerno > 0 && playerno <= MAXPLAYERS);
+	static char pages[4];
+	clear_bottom();
+	cur_player=&players[playerno-1];
+	pages[playerno-1] = !pages[playerno-1];
+	if(pages[playerno-1]) {
+		// auto orders page (page2)
+		set2_bottom_screen();
+		auto_display();
+	} else {
+		set1_bottom_screen();
+		screen_upd();
+	}
+}
     STUB(add_purchase)
     STUB(del_purchase)
 
@@ -2324,7 +2344,7 @@ static void set_top_screen(void) {
 }
 
 
-static void set1_bottom_screen() {
+static void set1_bottom_screen(void) {
 	cursor(8, 0);
 	TxWrite(rp, "HOLDINGS");
 	cursor(8, 34);
@@ -2388,7 +2408,6 @@ static void set1_bottom_screen() {
 }
 
 
-/* unused - maybe was called from one of the missing funcs */
 static void set2_bottom_screen() {
 	int x;
 
@@ -2621,7 +2640,7 @@ static void add_auto_exec(int auto_minus, int auto_plus, int option, int opt_pri
 /* Rewrites the entire set of auto execs for the cur_player */
 /************************************************************/
 
-static void auto_display() {
+static void auto_display(void) {
 	int counter;
 
 	for(counter = 0; counter < cur_player->auto_count; ++counter)
