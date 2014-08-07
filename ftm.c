@@ -861,9 +861,25 @@ float variance(int stockno) {
 static int kbhit() {
 	enum eventtypes e;
 	struct event myevent;
+	int key;
 	e = ezsdl_getevent(&myevent);
-	if(e != EV_KEYDOWN) return 0;
-	else return myevent.which;
+	switch(e) {
+		case EV_KEYDOWN:
+			key = myevent.which;
+			if(key >= 282 /* F1 */ && key < 291 /* F10 */) key -= 282 + 79;
+			else if (key == 291) key = -80;
+			else if (key > 256) key = 0;
+			else DPRINTF("got key %d\n", myevent.which);
+			return key;
+		case EV_NEEDREDRAW:
+			ezsdl_refresh();
+			break;
+		case EV_QUIT:
+			quit();
+		default:
+			return 0;
+	}
+	return 0;
 }
 
 static void end_year(void) {
