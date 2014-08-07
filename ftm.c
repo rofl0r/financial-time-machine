@@ -785,14 +785,6 @@ static float myrandom(float stdev) {
 	return (holder);
 }
 
-static void cursorit(int y, int x, const char*fn, int line) {
-#ifdef DEBUG_CALLS
-	dprintf(2, "%s called from %s:%d\n", __FUNCTION__, fn, line);
-#endif
-	//Move(rp, x * 8, y * 8 + 6);
-	Move(rp, x*8, y*8);
-}
-
 static float get_float(FILE * infile) {
 	char innum[20], c;
 	int i;
