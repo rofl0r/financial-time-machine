@@ -2322,6 +2322,40 @@ static int headers1(void) {
 	return (FALSE);
 }
 
+/* unused - maybe was called from one of the missing functions  */
+// it seems this function was called from validity_check
+static int compare(int start, int finish, char *com_array, int method) {
+	int counter, i;
+	const char *cur_case;		/* pointer to the stock or command name array */
+	int possible = 0;		/* the number of possible matches found */
+	int holder;		/* holds the last match found */
+	static const int arr_len[] = {[COMMAND] = ARRAY_SIZE(commands), [STOCK] = NO_OF_STOCKS };
+
+	for(i = 0; i < arr_len[method]; ++i) {
+		cur_case = method == COMMAND ? commands[i] : stock_array[i].name;
+
+		counter = start;
+		while((counter <= finish) && (com_array[counter] == cur_case[counter - start]) &&
+		      (cur_case[counter - start] != '\0')) {
+			++counter;
+		}
+
+		/* if we found an exact match */
+
+		if((cur_case[counter - start] == '\0') && (counter > finish))
+			return i;
+
+		/* if we found a possible match */
+
+		if(counter > finish) {
+			++possible;
+			holder = i;
+		}
+
+	}
+	return possible == 1 ? holder : NOT_FOUND;
+}
+
 static void set_top_screen(void) {
 	upd_quarter();
 
