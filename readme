@@ -1,1 +1,136 @@
-November 1985    This new release of THE FINANCIAL TIME MACHINE includes a newcommand for those people who can't wait for history to repeatitself slowly.The new command is called JUMP.This command allows you to set the game into a mode where itspeeds through time.  This means that it is no longer necessaryfor you to wait through long periods of inactivity to see howwell your investment strategy is doing.  In addition, for thoseintrepid enough to try, you'll find that all regular commands arestill active in JUMP mode!  And for the real speed addicts, ifyou turn off the stock ticker click (by holding down the controlkey and typing Q) things really being to fly.  To play along atthis speed you'll need a crystal ball and blindingly fastfingers.Here's how the command works. Type:    JUMP 10This will put in JUMP mode for 10 weeks.If you try:    JUMP *it will put you into JUMP mode for 3500 weeks, enough weeks toplay the entire 55 years.  Don't panic if you need to get backout of JUMP mode.  Just type:    JUMP 0Good Luck!ADDITIONAL INFO & HINTS-----------------------    For those of you who like short cuts and hate typing you'llfind that FTM recognizes any distinct abbreviation for a command,as well as for stock names.  For example:    B  2  IBMis as good as    BU	2  IBis as good as    BUY 2 IBMbut    B  2  I    is no good because FTM can't tell if you want to buy IBM,IMF, or ITT.  In addition you can always check a command byhitting the ESCAPE key.  This will NEVER execute the command butit will expand commands into a more readable form.  For example:    B  2  Rwould expand to    BUY 2 RES AT 120when you hit the ESCAPE key.ON TAXES--------    If you don't hold a stock at least a year then anything youmake is taxable as short term gains (50% tax rate).  If you DOhold it a year or more it's Long Term Gains (only 25% tax rate.FTM always sells the shares that you've held the longest first inorder to give you the best deal.  For those interested in reallyplaying the angles on taxes this is how taxes are figured.If both Short Term and Long Term Gains are positive or both arenegative then just multiply both by their respective tax rates(50% and 25%) to come up with your taxes due or tax credit.  Ifone or the other is positive and the other is negative thenthings are a bit more complicated.  This is what happens.  Firstyou add the two numbers together (Short Term Gains + Long TermGains; where one of the two is negative, a loss).   Then you pickwhich of the two numbers (Short or Long Term Gains) is largest,ignoring the negative sign, and use that numbers tax rate on thenumber you got by adding the two together.  Essentially what ishappening is that you can cancel Short and Long Term gains andlosses against each other and the tax rate is determined by whichone of the two was largest (in an absolute sense).  Got it???  Ifnot don't worry the program takes care of all this for you.    Bond interest is always taxed at 50% and is considered OtherEarnings, as are earnings from options.  If a stock splits andyou can't hold the extra shares  (the limit is 9999) then you getcash instead and that's taxed as Other Earnings as well.  If youown IMF when ANY stock splits you get a cash dividend as well,again taxed as Other Earnings (50% rate).  If all this taxationis getting you down then you'll be pleased to know that FTMautomatically carries forward any tax losses you might have fromyear to year.  Sorry, no refunds.A HINT------    In the real world it's tough to make money and so it is inthe world of THE FINANCIAL TIME MACHINE.  Those bar charts in theinstruction manual for each of stocks are the key.  They providea measure of how stocks generally (but only generally) react tovarious events.  It's worth the time to study them.  Also don'tbe reluctant to deal in options, there is money to be made, aswell as lost.  In addition, if you buy on margin you effectivelydouble your buying power and potential return (while at the sametime doubling you risk).  But interest accrues on you margin debtso beware.  And, after all is said and done, keep in mind thatthe prime rate generally reflects the inflation rate and that inreal life you would be fighting against inflation as well astrying to make money.  Those of you interested in seeing how youare doing against some benchmark can try one of two methods.Either set up a second dummy player that invests everything inbonds (this will reflect how much you could have made by justholding bonds; remember bonds don't incur any brokerage feeseither), or set up a dummy player that invests everything in IMF(this reflects how well the market performed overall).	Take somerisks and enjoy!					NMc
+November 1985
+
+    This new release of THE FINANCIAL TIME MACHINE includes a new
+command for those people who can't wait for history to repeat
+itself slowly.
+
+The new command is called JUMP.
+
+This command allows you to set the game into a mode where it
+speeds through time.  This means that it is no longer necessary
+for you to wait through long periods of inactivity to see how
+well your investment strategy is doing.  In addition, for those
+intrepid enough to try, you'll find that all regular commands are
+still active in JUMP mode!  And for the real speed addicts, if
+you turn off the stock ticker click (by holding down the control
+key and typing Q) things really being to fly.  To play along at
+this speed you'll need a crystal ball and blindingly fast
+fingers.
+
+Here's how the command works. Type:
+
+    JUMP 10
+
+This will put in JUMP mode for 10 weeks.
+
+If you try:
+
+    JUMP *
+
+it will put you into JUMP mode for 3500 weeks, enough weeks to
+play the entire 55 years.  Don't panic if you need to get back
+out of JUMP mode.  Just type:
+
+    JUMP 0
+
+Good Luck!
+
+
+ADDITIONAL INFO & HINTS
+-----------------------
+
+    For those of you who like short cuts and hate typing you'll
+find that FTM recognizes any distinct abbreviation for a command,
+as well as for stock names.  For example:
+
+    B  2  IBM
+
+is as good as
+
+    BU	2  IB
+
+is as good as
+
+    BUY 2 IBM
+
+but
+
+    B  2  I
+
+    is no good because FTM can't tell if you want to buy IBM,
+IMF, or ITT.  In addition you can always check a command by
+hitting the ESCAPE key.  This will NEVER execute the command but
+it will expand commands into a more readable form.  For example:
+
+    B  2  R
+
+would expand to
+
+    BUY 2 RES AT 120
+
+when you hit the ESCAPE key.
+
+
+ON TAXES
+--------
+
+    If you don't hold a stock at least a year then anything you
+make is taxable as short term gains (50% tax rate).  If you DO
+hold it a year or more it's Long Term Gains (only 25% tax rate.
+FTM always sells the shares that you've held the longest first in
+order to give you the best deal.  For those interested in really
+playing the angles on taxes this is how taxes are figured.
+
+If both Short Term and Long Term Gains are positive or both are
+negative then just multiply both by their respective tax rates
+(50% and 25%) to come up with your taxes due or tax credit.  If
+one or the other is positive and the other is negative then
+things are a bit more complicated.  This is what happens.  First
+you add the two numbers together (Short Term Gains + Long Term
+Gains; where one of the two is negative, a loss).   Then you pick
+which of the two numbers (Short or Long Term Gains) is largest,
+ignoring the negative sign, and use that numbers tax rate on the
+number you got by adding the two together.  Essentially what is
+happening is that you can cancel Short and Long Term gains and
+losses against each other and the tax rate is determined by which
+one of the two was largest (in an absolute sense).  Got it???  If
+not don't worry the program takes care of all this for you.
+
+    Bond interest is always taxed at 50% and is considered Other
+Earnings, as are earnings from options.  If a stock splits and
+you can't hold the extra shares  (the limit is 9999) then you get
+cash instead and that's taxed as Other Earnings as well.  If you
+own IMF when ANY stock splits you get a cash dividend as well,
+again taxed as Other Earnings (50% rate).  If all this taxation
+is getting you down then you'll be pleased to know that FTM
+automatically carries forward any tax losses you might have from
+year to year.  Sorry, no refunds.
+
+
+A HINT
+------
+    In the real world it's tough to make money and so it is in
+the world of THE FINANCIAL TIME MACHINE.  Those bar charts in the
+instruction manual for each of stocks are the key.  They provide
+a measure of how stocks generally (but only generally) react to
+various events.  It's worth the time to study them.  Also don't
+be reluctant to deal in options, there is money to be made, as
+well as lost.  In addition, if you buy on margin you effectively
+double your buying power and potential return (while at the same
+time doubling you risk).  But interest accrues on you margin debt
+so beware.  And, after all is said and done, keep in mind that
+the prime rate generally reflects the inflation rate and that in
+real life you would be fighting against inflation as well as
+trying to make money.  Those of you interested in seeing how you
+are doing against some benchmark can try one of two methods.
+Either set up a second dummy player that invests everything in
+bonds (this will reflect how much you could have made by just
+holding bonds; remember bonds don't incur any brokerage fees
+either), or set up a dummy player that invests everything in IMF
+(this reflects how well the market performed overall).	Take some
+risks and enjoy!
+
+
+
+
+					NMc
