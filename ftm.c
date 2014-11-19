@@ -615,6 +615,294 @@ static void display_rankings(void) {
 	cursor(rankingstarty+14,0);
 }
 
+static float option(int com_no, int stockno, int ex_price);
+static int compare(int start, int finish, char *com_array, int method);
+
+static int validity_check_original(char *cmd, int *com_char_count,
+                          int *com_no, int *units, int *stock_no,
+                          int *price, int *auto_plus, int *auto_minus) {
+
+/* missing stuff ... */
+int counter = 0;
+int ptr;
+AUTOS *tmp_ptr;
+
+     if(0 /*unknown */) {
+
+	if((*
+
+/* org code chunk starts here (at _no) */
+com_no != JUMP))
+            {
+              clear_line();
+              TxWriteMsg(rp,"Invalid Command");
+              return(FALSE);
+            }
+          else if ((*units > 3000) && (*com_no != JUMP))
+            {
+               clear_line();
+               TxWriteMsg(rp,"3000 UNIT TRANSACTION LIMIT");
+               return(FALSE);
+            }
+        }  /* end if isdigit(com_array[counter] */
+
+      else if (com_array[counter] == '*')
+        {
+          *units = ALL;
+          ++counter;
+        }
+
+      else if (*com_no == LIMIT)
+        *units = 0;
+
+      else
+        *units = 1;
+
+/*  check for valid DELETE command */
+
+      if (*com_no == DELETE)
+        {
+          if ((*units >=1) && (*units <= cur_player->auto_count))
+            return(TRUE);
+          else
+            {
+              clear_line();
+              TxWriteMsg(rp,"INVALID DELETE COMMAND");
+              return(FALSE);
+            }
+        }
+      else if (*com_no == EXERCISE)
+        {
+          if ((*units >= 1) && (*units <= cur_player->auto_count) &&
+              (cur_player->auto_ptr[*units - 1]->option_type != AUTOBUY) &&
+              (cur_player->auto_ptr[*units - 1]->option_type != AUTOSELL))
+            {
+              tmp_ptr = cur_player->auto_ptr[*units - 1];
+              *price = option(tmp_ptr->option_type,tmp_ptr->stock_no,tmp_ptr->option_price);
+              return(TRUE);
+            }
+          else
+            {
+              clear_line();
+              TxWriteMsg(rp,"Invalid Exercise Command");
+              return(FALSE);
+            }
+        }
+      else if (*com_no == BONDS)
+        {
+          if ((!q_break) || (*units == ALL))
+            {
+              message = TRUE;
+              clear_line();
+              if (*units == ALL)
+                {
+                TxWrite(rp,"INVALID COMMAND");
+                }
+              else
+                TxWrite(rp,"BONDS SOLD AT BEGINNING OF QUARTER ONLY");
+              return(FALSE);
+            }
+          else
+            {
+              return(TRUE);
+            }
+        }
+      else if (*com_no == CASH)
+        {
+            if (!q_break)
+              {
+                clear_line();
+                TxWriteMsg(rp,"CAN'T SELL T-BILLS UNTIL END OF QUARTER");
+                return(FALSE);
+              }
+            else if (*units == ALL)
+              *units = cur_player->bonds;
+            else if (*units > cur_player->bonds)
+              *units = cur_player->bonds;
+            return(TRUE);
+        }
+
+/*** New command to speed through time added 11/22/85  **/
+
+      else if (*com_no == JUMP)
+   {
+       if (*units == ALL)
+      *units = 3500;
+       return(TRUE);
+   }
+
+      while ((com_array[counter] == ' ') &&
+             (counter <= *com_char_count))
+          ++counter;
+
+      if (counter > *com_char_count)
+        {
+          clear_line();
+          TxWriteMsg(rp,"NO STOCK NAME GIVEN");
+          return (FALSE);
+        }
+
+      ptr = counter;
+
+      while ((com_array[counter] != ' ') &&
+             (counter <= *com_char_count))
+        ++counter;
+
+
+      *stock_no = compare(ptr,counter - 1,com_array,STOCK);
+
+      if (*stock_no == NOT_FOUND)
+        {
+          clear_line();
+          TxWriteMsg(rp,"INVALID STOCK NAME GIVEN");
+          return(FALSE);
+        }
+
+      else if ((*com_no == PUT) ||
+               (*com_no == CALL))
+        {
+          if (q_break == FALSE)
+            {
+              clear_line();
+              TxWriteMsg(rp,"NO OPTIONS SOLD UNTIL END OF QUARTER");
+              return(FALSE);
+            }
+          else
+            {
+              *price = option(*com_no,*stock_no,stock_array[*stock_no].price);
+              return(TRUE);
+            }
+
+        }
+      else if (*com_no == GRAPH)
+        {
+          if (q_break == FALSE)
+            {
+              clear_line();
+              TxWriteMsg(rp,"DATA AVAILABLE AT END OF QUARTER ONLY");
+              return(FALSE);
+            }
+          else
+            return(TRUE);
+        }
+      else if (*com_no == LIMIT)
+        {
+          if (cur_player->portfolio[*stock_no].shares > 0)
+            {
+              if (*units < 200)
+                return(TRUE);
+              else
+                {
+                  clear_line();
+                  TxWriteMsg(rp,"Maximum Price is $200");
+                  return(FALSE);
+                }
+            }
+          else
+            {
+              clear_line();
+              TxWriteMsg(rp,"You don't own any");
+              return(FALSE);
+            }
+        }
+      else if ((*com_no == SELL) && (*units == ALL))
+        *units = cur_player->portfolio[*stock_no].shares;
+      else if (*units == ALL)
+        {
+          clear_line();
+          TxWriteMsg(rp,"INVALID USE OF ASTERISK");
+          return(FALSE);
+        }
+
+
+      while ((com_array[counter] != '+') &&
+             (com_array[counter] != '-') &&
+             (counter <= *com_char_count))
+         ++counter;
+
+
+      if ((counter > *com_char_count))          /* if no more user input */
+        if (((*com_no == BUY) || (*com_no == MARGIN)) &&
+            ((*units + cur_player->portfolio[*stock_no].shares) > LOTLIMIT))
+          {
+            clear_line();
+            TxWriteMsg(rp,"Would Exceed 9999 Lot Limit");
+            return(FALSE);
+          }
+        else
+          {
+            *price = stock_array[*stock_no].price;
+            return(TRUE);
+          }
+
+      else                                     /* we found a digit, plus,  */
+        {                                      /* or minus.                */
+          int i,pr,type;
+
+
+          switch(com_array[counter])
+            {
+              case '+': type = 1;
+                        ++counter;
+                        *auto_plus = 0;
+                        break;
+              case '-': type = 2;
+                        ++counter;
+                        *auto_minus = 0;
+                        break;
+            }
+
+          pr = 0;
+
+          while ((isdigit(com_array[counter])) &&
+                 (counter <= *com_char_count) &&
+                 (pr <= 3000))
+            {
+              i = com_array[counter] - DIFFERENCE;
+              pr = (pr * 10) + i;
+              ++counter;
+            }
+
+          if (pr == 0)
+            {
+              clear_line();
+              TxWriteMsg(rp,"ZERO IS AN INVALID PRICE");
+              return(FALSE);
+            }
+          else if (pr > 200)
+            {
+              clear_line();
+              TxWriteMsg(rp,"ATTEMPTED TOO GREAT A PRICE");
+              return(FALSE);
+            }
+          else
+            {
+              switch(type)
+                {
+                  case 1:  *auto_plus = pr;
+                            break;
+                  case 2:  *auto_minus = pr;
+                           break;
+                }
+
+
+              if (*com_no == MARGIN)
+                {
+                  clear_line();
+                  TxWriteMsg(rp,"NO AUTO TRANSACTIONS ON MARGIN");
+                  return(FALSE);
+                }
+              else
+                return(TRUE);
+
+
+            }   /* end price not 0 or >3000 */
+
+        }    /* end found + or - fields */
+
+}     /* end procedure validity_check */
+
+
 //validity_check: supposed to check whether a user-entered command can be executed
 // translates the command number
 // prints "INVALID COMMAND WORD" if command is not known
