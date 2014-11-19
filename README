@@ -1,3 +1,28 @@
+November 2014
+
+Financial Time Machine first appeared in 1982 as 
+"The Great Wall Street Fortune Hunt" for the Odyssey 2 Console.
+later it reappeared as C64 version with the current title.
+The version for the Commodore Amiga from 1985 was shipped together
+with its C source code, although a single source file (lessee6.c)
+has been lost.
+http://eab.abime.net/showthread.php?t=71641
+
+this project here is based on that source code and tries to recreate
+the missing functionality and use modern backend to be able to run
+the game on recent operating systems in order to preserve it for
+the generations to come.
+
+To compile it, a C99 compiler, SDL library, and "make" utility
+is required, however lacking the latter, it should be sufficient to
+just manually compile ftm.c.
+
+Original README follows.
+
+					rofl0r
+
+
+
 November 1985
 
     This new release of THE FINANCIAL TIME MACHINE includes a new
