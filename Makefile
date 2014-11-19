@@ -4,7 +4,7 @@ OBJS=$(SRCS:.c=.o)
 
 CFLAGS=-Wall -g3 -O0
 
-EZSDL_PATH=../ezsdl
+EZSDL_PATH=.
 INC=-I$(EZSDL_PATH)
 
 -include config.mak
