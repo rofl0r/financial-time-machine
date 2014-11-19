@@ -650,10 +650,13 @@ static int validity_check(char *cmd, int *com_char_count,
 		case SAVE:
 		case QUIT:
 			return TRUE;
+		case DELETE:
 		case CASH:
 		case BONDS:
 		case JUMP: numberonly = 1;
+		case LIMIT:
 		case PUT:
+		case CALL:
 		case MARGIN:
 		case SELL:
 		case BUY:
@@ -673,6 +676,7 @@ static int validity_check(char *cmd, int *com_char_count,
 				if((si = find_stock(cmd)) == -1) goto inv_stock;
 				*stock_no = si;
 				*trans_price = stock_array[si].price * *units;
+				if(*com_no == LIMIT && !cur_player->portfolio[*stock_no].shares) goto dont_own_any;
 			} else {
 				/* special case code for stuff where the dispatcher function doesnt validate */
 				switch(*com_no) {
@@ -692,6 +696,8 @@ static int validity_check(char *cmd, int *com_char_count,
 	return TxWriteMsg(rp, "DATA AVAILABLE AT END OF QUARTER ONLY");
 	insuff_bonds:
 	return TxWriteMsg(rp, "INSUFFICIENT AMOUNT OF BONDS STOCKED");
+	dont_own_any:
+	return TxWriteMsg(rp, "You don't own any");
 }
 
 static void set1_bottom_screen(void);
@@ -759,7 +765,7 @@ static void scrollit(char u) {
 }
 
 static void load_tick_element(TICK_ITEM* t, int stockno) {
-	snprintf(t->item, sizeof(t->item), "%s-%d   ", stock_array[stockno].name, stock_array[stockno].price);
+	snprintf(t->item, sizeof(t->item), "%s-%d  ", stock_array[stockno].name, stock_array[stockno].price);
 }
 
 static long long timeval2utime(struct timeval *t) {
